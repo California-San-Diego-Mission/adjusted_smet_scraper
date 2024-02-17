@@ -1,0 +1,9 @@
+session.json
+g_service.json
+/reports
+geckodriver.log
+/__pycache__
+*.json
+*.png
+test.html
+.env
