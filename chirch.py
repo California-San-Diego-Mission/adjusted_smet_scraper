@@ -2,7 +2,6 @@
 """Log into church servers and get data for SMET"""
 
 import json
-import time
 from datetime import timedelta
 from datetime import datetime
 import requests
@@ -111,6 +110,10 @@ class ChurchClient:
     def get_referral_dashboard_counts(self):
         """Get the dashboard counts from referral manager"""
         res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
+        if res.status_code == 500:
+            print("Cookies are invalid, logging in")
+            self.login()
+            res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError
@@ -123,6 +126,10 @@ class ChurchClient:
     def get_people_list(self):
         """Gets the list of everyone from the referral manager. This is a HUGE request at roughly 8mb. Smh the church is bad"""
         res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/people/mission/14289")
+        if res.status_code == 500:
+            print("Cookies are invalid, logging in")
+            self.login()
+            res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/people/mission/14289")
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError

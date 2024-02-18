@@ -12,7 +12,6 @@ import messenger
 
 def generate_report(s: socket.socket, chat_id: str):
     client = chirch.ChurchClient()
-    client.login()
     # persons = json.load(open('test.json', 'r', encoding='utf-8'))['persons']
     persons = client.get_people_list()['persons']
     troubled = []

@@ -27,13 +27,13 @@ class ClaimedStatus(Enum):
 class Zone(int, Enum):
     """Each of the mission zones"""
     ZONE_1 = 500271388
-    # ZONE_2 = 500350997
+    ZONE_2 = 500350997
     ZONE_3 = 457719924
     ZONE_4 = 3528712
-    # ZONE_5 = 136030695
-    # ZONE_6 = 3528714
-    # ZONE_7 = 500366346
-    # ZONE_8 = 117224465
+    ZONE_5 = 136030695
+    ZONE_6 = 3528714
+    ZONE_7 = 500366346
+    ZONE_8 = 117224465
 
 class ReferralStatus(Enum):
     """The status a referral can be in"""
