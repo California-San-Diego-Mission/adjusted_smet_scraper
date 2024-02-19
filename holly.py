@@ -1,3 +1,4 @@
+#pylint: disable=line-too-long
 """
 Code to send uncontacted referrals to the ZLs every morning
 """
@@ -6,11 +7,38 @@ import datetime
 import json
 import socket
 
+from os import listdir
+from os.path import isfile, join
+
 import chirch
 import dashboard
-import messenger
 
 def generate_report(s: socket.socket, chat_id: str):
+    """Generates a report of uncontacted referrals"""
+    # Determine if a report already exists in a reports folder
+    # Get the list of files in /reports
+    reports = [f for f in listdir('reports') if isfile(join('reports', f))]
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d')
+    for report in reports:
+        if now_str in report:
+            # If a report for today already exists, send it
+            with open(f'reports/{report}', 'r', encoding='utf-8') as f:
+                # Parse it as a JSON
+                report_data = json.load(f)
+                zones = report_data['zones']
+                # Walk the dictionary, getting the key and values
+                for zone, zone_data in zones.items():
+                    zone_name = dashboard.Zone(int(zone)).name.replace('_', ' ').capitalize()
+                    message = f'{zone_name}\n'
+                    for area_name, people in zone_data.items():
+                        message += f'- {area_name}:\n'
+                        for person in people:
+                            message += f'  - {person}\n'
+                        message += '\n'
+                    # Send the message
+                    s.send(json.dumps({'content': message, 'chat_id': chat_id, 'sender': 'urmom'}).encode('utf-8'))
+                return
+
     client = chirch.ChurchClient()
     # persons = json.load(open('test.json', 'r', encoding='utf-8'))['persons']
     persons = client.get_people_list()['persons']
@@ -86,8 +114,12 @@ def main():
                 json_data = json.loads(data.decode('utf-8'))
                 chat_id = process_json_object(json_data)
                 if chat_id:
-                    s.send(json.dumps({'content': '*bark bark*', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
-                    generate_report(s, chat_id)
+                    s.send(json.dumps({'content': '*bark bark* (I\'m on my way, one minute)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
+                    try:
+                        generate_report(s, chat_id)
+                    except Exception as e:
+                        print(e)
+                        s.send(json.dumps({'content': '*sad bark* (I couldn\'t generate a report for some reason)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
                 data = []
 
     except (socket.error, json.JSONDecodeError) as e:
