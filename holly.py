@@ -6,6 +6,7 @@ Code to send uncontacted referrals to the ZLs every morning
 import datetime
 import json
 import socket
+import time
 
 from os import listdir
 from os.path import isfile, join
@@ -109,23 +110,26 @@ def main():
     host = 'localhost'
     port = 8011
 
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((host, port))
-            while True:
-                data = s.recv(1024)
-                json_data = json.loads(data.decode('utf-8'))
-                chat_id = process_json_object(json_data)
-                if chat_id:
-                    try:
-                        generate_report(s, chat_id)
-                    except Exception as e: #pylint: disable=broad-exception-caught
-                        print(e.with_traceback(None))
-                        s.send(json.dumps({'content': '*sad bark* (I couldn\'t generate a report for some reason)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
-                data = []
+    while True:
+        print('Connecting to Holly socket')
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((host, port))
+                while True:
+                    data = s.recv(1024)
+                    json_data = json.loads(data.decode('utf-8'))
+                    chat_id = process_json_object(json_data)
+                    if chat_id:
+                        try:
+                            generate_report(s, chat_id)
+                        except Exception as e: #pylint: disable=broad-exception-caught
+                            print(e.with_traceback(None))
+                            s.send(json.dumps({'content': '*sad bark* (I couldn\'t generate a report)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
+                    data = []
 
-    except (socket.error, json.JSONDecodeError) as e:
-        print(f"Error: {e}")
+        except (socket.error, json.JSONDecodeError) as e:
+            print(f"Error: {e}")
+            time.sleep(30)
 
 if __name__ == "__main__":
     main()
