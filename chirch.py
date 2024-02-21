@@ -82,20 +82,22 @@ class ChurchClient:
         # Get the stateToken
         for _ in range(5):
             res = self.client.get(f"https://id.churchofjesuschrist.org/oauth2/default/v1/authorize?response_type=code&redirect_uri=https%3A%2F%2Freferralmanager.churchofjesuschrist.org%2Flogin&scope=openid%20profile%20offline_access&state={self.state}&client_id={self.client_id}").text
-            self.state_token = res.split("\"stateToken\":\"")[1].split("\"")[0]
+            self.state_token = res.split("\"stateToken\":\"")[1].split("\"")[0].encode().decode('unicode-escape')
             if not '\\' in self.state_token:
                 break
         print(self.state_token)
 
         # Send the username with the stateToken
-        res = self.client.post("https://id.churchofjesuschrist.org/api/v1/authn", data=json.dumps({"stateToken": self.state_token, "nonce": self.nonce, "username": self.username}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/identify", data=json.dumps({"stateHandle": self.state_token, "identifier": self.username}), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if not res.status_code == 200:
             print(res)
             print(res.text)
             raise ChurchInvalidCreds
+        res = res.json()
+        self.state_token = res["stateHandle"]
 
         # Send the password with the stateToken
-        res = self.client.post("https://id.churchofjesuschrist.org/api/v1/authn/factors/password/verify?rememberDevice=false", data=json.dumps({"stateToken": self.state_token, "password": self.password}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/challenge/answer", data=json.dumps({"stateHandle": self.state_token, "credentials": {"passcode": self.password}}), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if not res.status_code == 200:
             print(res)
             print(res.text)

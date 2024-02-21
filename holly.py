@@ -70,9 +70,6 @@ def generate_report(s: socket.socket, chat_id: str):
     now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
     json.dump({'zones': zones}, open(f'reports/{now}.json', 'w', encoding='utf-8'), indent=4)
 
-    browser = messenger.MessengerClient()
-    browser.load_cookies()
-
     for zone, items in zones.items():
         message = f"{zone.name.replace('_', ' ')}\n"
         for area, names in items.items():
