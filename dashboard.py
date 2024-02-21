@@ -33,7 +33,6 @@ class Zone(int, Enum):
     ZONE_5 = 136030695
     ZONE_6 = 3528714
     ZONE_7 = 500366346
-    ZONE_8 = 117224465
 
 class ReferralStatus(Enum):
     """The status a referral can be in"""
