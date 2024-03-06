@@ -71,7 +71,7 @@ def generate_report(s: socket.socket, chat_id: str):
     for requested_zone in zone_order:
         zone = zones.get(str(requested_zone.value))
         if zone is None:
-            s.send(json.dumps({'content': f"{requested_zone.name.replace('_', ' ').capitalize()}\nNo uncontacted referrals! :)", 'chat_id': chat_id, 'sender': 'urmom'}).encode('utf-8'))
+            s.send(json.dumps({'content': f"{requested_zone.name.replace('_', ' ').capitalize()}\nNo uncontacted referrals! :)", 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
         print(zone)
         if zone:
             message = f"{requested_zone.name.replace('_', ' ').capitalize()}\n"
@@ -81,7 +81,7 @@ def generate_report(s: socket.socket, chat_id: str):
                     message += f"  - {name}\n"
                 message += "\n"
             print(message)
-            s.send(json.dumps({'content': message, 'chat_id': chat_id, 'sender': 'urmom'}).encode('utf-8'))
+            s.send(json.dumps({'content': message, 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
 
 AUTHORIZED_USERS = [
     "Coxson",
@@ -99,6 +99,8 @@ def process_json_object(json_data):
             if user.lower() in json_data['sender'].lower():
                 authorized = True
                 break
+            else:
+                print('Unauthorized user')
         if authorized:
             return json_data['chat_id']
     else:

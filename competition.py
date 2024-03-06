@@ -4,6 +4,7 @@
 import datetime
 import json
 import socket
+import time
 
 import chirch
 import dashboard
@@ -104,33 +105,35 @@ def main():
     host = 'localhost'
     port = 8011
 
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((host, port))
-            while True:
-                data = s.recv(1024)
-                json_data = json.loads(data.decode('utf-8'))
-                if handle_request(json_data):
-                    zones = get_score()
-                    zone_percentages = {}
-                    for zone in zones:
-                        zone_percentages[zone] = (zones[zone][0] / zones[zone][1]) * 100
-                    # Rank the zones
-                    ranked = []
-                    for zone in zone_percentages:
-                        ranked.append((zone, zone_percentages[zone]))
-                    ranked.sort(key=lambda x: x[1], reverse=True)
-                    # Create the string
-                    res = "Here are the current scores:\n"
-                    for zone in ranked:
-                        percent_str = round(zone[1], 2)
-                        zone_name = zone[0].name.replace('_', ' ').capitalize()
-                        res += f"{zone_name}: {percent_str}%\n"
-                    # Send the string
-                    s.sendall(json.dumps({'content': res, 'chat_id': json_data['chat_id'], 'sender': ''}).encode('utf-8'))
+    while True:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((host, port))
+                while True:
+                    data = s.recv(1024)
+                    json_data = json.loads(data.decode('utf-8'))
+                    if handle_request(json_data):
+                        zones = get_score()
+                        zone_percentages = {}
+                        for zone in zones:
+                            zone_percentages[zone] = (zones[zone][0] / zones[zone][1]) * 100
+                        # Rank the zones
+                        ranked = []
+                        for zone in zone_percentages:
+                            ranked.append((zone, zone_percentages[zone]))
+                        ranked.sort(key=lambda x: x[1], reverse=True)
+                        # Create the string
+                        res = "Here are the current scores:\n"
+                        for zone in ranked:
+                            percent_str = round(zone[1], 2)
+                            zone_name = zone[0].name.replace('_', ' ').capitalize()
+                            res += f"{zone_name}: {percent_str}%\n"
+                        # Send the string
+                        s.sendall(json.dumps({'content': res, 'chat_id': json_data['chat_id'], 'sender': ''}).encode('utf-8'))
 
-    except (socket.error, json.JSONDecodeError) as e:
-        print(f"Error: {e}")
+        except (socket.error, json.JSONDecodeError) as e:
+            print(f"Error: {e}")
+            time.sleep(15)
 
 if __name__ == "__main__":
     # get_score({})
