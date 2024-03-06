@@ -88,7 +88,8 @@ AUTHORIZED_USERS = [
     "Nielson",
     "Meilstrup",
     "Bugby",
-    "Widdison"
+    "Widdison",
+    "Rowley"
 ]
 
 def process_json_object(json_data):
