@@ -14,8 +14,47 @@ from os.path import isfile, join
 import chirch
 import dashboard
 
-def generate_report(s: socket.socket, chat_id: str):
+AUTHORIZED_USERS = [
+    "Coxson",
+    "Nielson",
+    "Meilstrup",
+    "Bugby",
+    "Widdison",
+    "Rowley"
+]
+
+def generate_report(s: socket.socket, chat_id: str, sender: str):
     """Generates a report of uncontacted referrals"""
+    # Get which zones we're trying out
+    messenger_ids = {
+        "2419609848082592": dashboard.Zone.ZONE_1,
+        "4954822721225549": dashboard.Zone.ZONE_2,
+        "5865277466887042": dashboard.Zone.ZONE_3,
+        "1363317190447129": dashboard.Zone.ZONE_4,
+        "5936540856451995": dashboard.Zone.ZONE_5,
+        "4133470603409493": dashboard.Zone.ZONE_6,
+        "4145470815511596": dashboard.Zone.ZONE_7,
+    }
+
+    requested_zones = messenger_ids.get(chat_id)
+    if not requested_zones:
+        # Authorize the user
+        authorized = False
+        for au in AUTHORIZED_USERS:
+            if au in sender:
+                authorized = True
+                break
+        if not authorized:
+            s.send(json.dumps({
+                "content": "new tennis ball, who dis?",
+                "chat_id": chat_id,
+                "sender": ""
+            }).encode('utf-8'))
+            return
+        requested_zones = [dashboard.Zone.ZONE_1, dashboard.Zone.ZONE_2, dashboard.Zone.ZONE_3, dashboard.Zone.ZONE_4, dashboard.Zone.ZONE_5, dashboard.Zone.ZONE_6, dashboard.Zone.ZONE_7]
+    else:
+        requested_zones = [requested_zones]
+
     zones = None
 
     # Determine if a report already exists in a reports folder
@@ -67,8 +106,7 @@ def generate_report(s: socket.socket, chat_id: str):
         json.dump({'zones': zones}, open(f'reports/{now}.json', 'w', encoding='utf-8'), indent=4)
         zones = json.loads(json.dumps({'zones': zones}))['zones'] # lazy I know
 
-    zone_order = [dashboard.Zone.ZONE_1, dashboard.Zone.ZONE_2, dashboard.Zone.ZONE_3, dashboard.Zone.ZONE_4, dashboard.Zone.ZONE_5, dashboard.Zone.ZONE_6, dashboard.Zone.ZONE_7]
-    for requested_zone in zone_order:
+    for requested_zone in requested_zones:
         zone = zones.get(str(requested_zone.value))
         if zone is None:
             s.send(json.dumps({'content': f"{requested_zone.name.replace('_', ' ').capitalize()}\nNo uncontacted referrals! :)", 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
@@ -83,29 +121,12 @@ def generate_report(s: socket.socket, chat_id: str):
             print(message)
             s.send(json.dumps({'content': message, 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
 
-AUTHORIZED_USERS = [
-    "Coxson",
-    "Nielson",
-    "Meilstrup",
-    "Bugby",
-    "Widdison",
-    "Rowley"
-]
-
 def process_json_object(json_data):
     """Checks if this message was for us"""
     if 'holly, go fetch' in json_data['content'].lower():
-        authorized = False
-        for user in AUTHORIZED_USERS:
-            if user.lower() in json_data['sender'].lower():
-                authorized = True
-                break
-            else:
-                print('Unauthorized user')
-        if authorized:
-            return json_data['chat_id']
+        return True
     else:
-        return None
+        return False
 
 
 def main():
@@ -121,13 +142,13 @@ def main():
                 while True:
                     data = s.recv(1024)
                     json_data = json.loads(data.decode('utf-8'))
-                    chat_id = process_json_object(json_data)
-                    if chat_id:
+                    pls_go = process_json_object(json_data)
+                    if pls_go:
                         try:
-                            generate_report(s, chat_id)
+                            generate_report(s, json_data['chat_id'], json_data['sender'])
                         except Exception as e: #pylint: disable=broad-exception-caught
                             print(e.with_traceback(None))
-                            s.send(json.dumps({'content': '*sad bark* (I couldn\'t generate a report)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
+                            s.send(json.dumps({'content': '*sad bark* (I couldn\'t generate a report)', 'chat_id': json_data['chat_id'], 'sender': '_'}).encode('utf-8'))
                     data = []
 
         except (socket.error, json.JSONDecodeError) as e:
