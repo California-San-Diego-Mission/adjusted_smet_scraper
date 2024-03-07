@@ -51,7 +51,7 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
                 "sender": ""
             }).encode('utf-8'))
             return
-        requested_zones = [dashboard.Zone.ZONE_1, dashboard.Zone.ZONE_2, dashboard.Zone.ZONE_3, dashboard.Zone.ZONE_4, dashboard.Zone.ZONE_5, dashboard.Zone.ZONE_6, dashboard.Zone.ZONE_7]
+        requested_zones = [dashboard.Zone.ZONE_1, dashboard.Zone.ZONE_2, dashboard.Zone.ZONE_3, dashboard.Zone.ZONE_4, dashboard.Zone.ZONE_5, dashboard.Zone.ZONE_6, dashboard.Zone.ZONE_7, dashboard.Zone.ZONE_8]
     else:
         requested_zones = [requested_zones]
 
