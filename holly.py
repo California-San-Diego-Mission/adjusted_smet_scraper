@@ -123,7 +123,8 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
 
 def process_json_object(json_data):
     """Checks if this message was for us"""
-    if 'holly, go fetch' in json_data['content'].lower():
+    content = json_data['content'].lower().replace('go', '').replace(',', '').replace('  ', ' ')
+    if 'holly fetch' in content:
         return True
     else:
         return False

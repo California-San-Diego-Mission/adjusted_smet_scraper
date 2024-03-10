@@ -125,13 +125,16 @@ class ChurchClient:
         except requests.exceptions.JSONDecodeError as e:
             raise ChurchParseError from e
 
-    def get_people_list(self):
+    def get_people_list(self, recurse=False):
         """Gets the list of everyone from the referral manager. This is a HUGE request at roughly 8mb. Smh the church is bad"""
         res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/people/mission/14289")
         if res.status_code == 500:
-            print("Cookies are invalid, logging in")
-            self.login()
-            res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/people/mission/14289")
+            if recurse:
+                raise ChurchHttpError
+            else:
+                print("Cookies are invalid, logging in")
+                self.login()
+                return self.get_people_list(recurse=True)
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError
@@ -139,7 +142,12 @@ class ChurchClient:
         try:
             return res.json()
         except requests.exceptions.JSONDecodeError as e:
-            raise ChurchParseError from e
+            if recurse:
+                raise ChurchParseError from e
+            else:
+                print("Cookies might be invalid, logging in")
+                self.login()
+                return self.get_people_list(recurse=True)
 
     def get_person_timeline(self, person_guid):
         """Gets the details for a single person from the referral manager"""
