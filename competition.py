@@ -2,138 +2,104 @@
 """Competition code"""
 
 import datetime
-import json
-import socket
 import time
+import holly
 
 import chirch
 import dashboard
 
-AUTHORIZED_USERS = [
-    "Coxson",
-    "Nielson",
-    "Meilstrup",
-    "Bugby",
-    "Widdison"
-]
-
-GARBAGE = [
-    'holly',
-    ',',
-    ', ',
-    'the',
-    'a ',
-    'is',
-    '?',
-    '.',
-    'please',
-    'can',
-    'you',
-]
-
-def is_authorized(name):
-    """Determines if the sender is authorized to run this command"""
-    for user in AUTHORIZED_USERS:
-        if user.lower() in name.lower():
-            return True
-    return False
-
-def handle_request(request):
+def handle_request(request: holly.ParsedHollyMessage):
     """Parses the text to determine if we need to react"""
-    content: str = request['content'].lower()
-    if not is_authorized(request['sender']):
-        return False
-    if not content.startswith('holly'):
-        return False
-
-    for g in GARBAGE:
-        content = content.replace(g, '')
-    for _ in range(1,5):
-        content = content.replace('  ', ' ')
-    content = content.strip()
-
-    print(f"Parsing {content}")
-    if content == 'what score':
-        return True
-
-    if content == 'who winning':
-        return True
-
-    if content == 'get score':
-        return True
+    print(request)
+    if request.is_targeted and (request.match('what score') or request.match('who winning') or request.match('get score')):
+        return get_score()
 
     return False
 
 def get_score():
     """Gets the score of contacted/total referrals"""
-    client = chirch.ChurchClient()
-    persons = client.get_people_list()['persons']
-    # persons = json.load(open('test.json', 'r', encoding='utf-8'))
+    try:
+        client = chirch.ChurchClient()
+        persons = client.get_cached_people_list()['persons']
 
-    now = datetime.datetime.now()
-    # get the last Sunday
-    last_sunday = now - datetime.timedelta(days=now.weekday(), weeks=1)
-    last_sunday = last_sunday.replace(hour=0, minute=0, second=0, microsecond=0)
+        now = datetime.datetime.now()
+        # get the last Sunday
+        last_sunday = now - datetime.timedelta(days=now.weekday(), weeks=1)
+        last_sunday = last_sunday.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    zones = {}
-    for person in persons:
-        assigned_date = person["referralAssignedDate"]
-        if assigned_date is None:
-            continue
-        assigned_date = datetime.datetime.fromtimestamp(person["referralAssignedDate"] / 1000)
-        if assigned_date < last_sunday:
-            continue
-        try:
-            zone = dashboard.Zone(person["zoneId"])
+        zones = {}
+        for person in persons:
+            assigned_date = person.get("referralAssignedDate")
+            if assigned_date is None:
+                continue
+            assigned_date = datetime.datetime.fromtimestamp(assigned_date / 1000)
+            if assigned_date < last_sunday:
+                continue
+            try:
+                zone_id = person.get("zoneId")
+                if zone_id is None:
+                    continue
+                zone = dashboard.Zone(zone_id)
 
-            # If the zone doesn't exist, insert it in
-            if zones.get(zone) is None:
-                zones[zone] = (0, 0)
+                # If the zone doesn't exist, insert it
+                if zones.get(zone) is None:
+                    zones[zone] = (0, 0)
 
-            status = dashboard.ReferralStatus(person["referralStatusId"])
+                status_id = person.get("referralStatusId")
+                if status_id is None:
+                    continue
+                status = dashboard.ReferralStatus(status_id)
 
-            if status == dashboard.ReferralStatus.NOT_ATTEMPTED:
-                zones[zone] = (zones[zone][0], zones[zone][1] + 1)
-            else:
-                zones[zone] = (zones[zone][0] + 1, zones[zone][1] + 1)
-        except: #pylint: disable=bare-except
-            continue
-    return zones
+                if status == dashboard.ReferralStatus.NOT_ATTEMPTED:
+                    zones[zone] = (zones[zone][0], zones[zone][1] + 1)
+                elif status == dashboard.ReferralStatus.NOT_SUCCESSFUL:
+                    zones[zone] = (zones[zone][0] + 0.8, zones[zone][1] + 1)
+                elif status == dashboard.ReferralStatus.SUCCESSFUL:
+                    zones[zone] = (zones[zone][0] + 1, zones[zone][1] + 1)
+            except Exception as e:
+                print(f"Error processing person: {e}")
+                continue
+
+        zone_percentages = {}
+        for zone, zone_items in zones.items():
+            if zone_items[1] != 0:
+                zone_percentages[zone] = (zone_items[0] / zone_items[1]) * 100
+
+        # Rank the zones
+        ranked = sorted(zone_percentages.items(), key=lambda x: x[1], reverse=True)
+
+        # Create the string
+        res = "Here are the current scores:\n"
+        for zone, percentage in ranked:
+            percent_str = round(percentage, 2)
+            zone_name = zone.name.replace('_', ' ').capitalize()
+            res += f"{zone_name}: {percent_str}%\n"
+        return res
+    except Exception as e:
+        print(f"Error getting score: {e}")
+        return "*bark* unable to fetch the score *bark*"
+
 
 def main():
     """Main function duh"""
-    host = 'localhost'
-    port = 8011
+    parser = holly.HollyParser()
 
     while True:
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((host, port))
-                while True:
-                    data = s.recv(1024)
-                    json_data = json.loads(data.decode('utf-8'))
-                    if handle_request(json_data):
-                        zones = get_score()
-                        zone_percentages = {}
-                        for zone in zones:
-                            zone_percentages[zone] = (zones[zone][0] / zones[zone][1]) * 100
-                        # Rank the zones
-                        ranked = []
-                        for zone in zone_percentages:
-                            ranked.append((zone, zone_percentages[zone]))
-                        ranked.sort(key=lambda x: x[1], reverse=True)
-                        # Create the string
-                        res = "Here are the current scores:\n"
-                        for zone in ranked:
-                            percent_str = round(zone[1], 2)
-                            zone_name = zone[0].name.replace('_', ' ').capitalize()
-                            res += f"{zone_name}: {percent_str}%\n"
-                        # Send the string
-                        s.sendall(json.dumps({'content': res, 'chat_id': json_data['chat_id'], 'sender': ''}).encode('utf-8'))
+            client = holly.HollyClient()
+            print('Connected to Holly')
+            while True:
+                raw_msg = client.recv()
+                print(raw_msg)
+                ret = handle_request(raw_msg.parse(parser))
+                if ret:
+                    client.send(holly.HollyMessage(content=ret, chat_id=raw_msg.chat_id, sender=''))
 
-        except (socket.error, json.JSONDecodeError) as e:
+        except holly.HollyError as e:
             print(f"Error: {e}")
-            time.sleep(15)
+
+        print('Disconnected from Holly socket')
+        time.sleep(30)
 
 if __name__ == "__main__":
     main()

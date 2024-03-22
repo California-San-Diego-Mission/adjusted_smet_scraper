@@ -76,7 +76,7 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
         s.send(json.dumps({'content': '*bark bark* (One minute)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
         client = chirch.ChurchClient()
         # persons = json.load(open('test.json', 'r', encoding='utf-8'))['persons']
-        persons = client.get_people_list()['persons']
+        persons = client.get_cached_people_list()['persons']
         troubled = []
         for p in persons:
             res = client.parse_person(p)
