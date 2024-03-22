@@ -34,6 +34,7 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
         "5936540856451995": dashboard.Zone.ZONE_5,
         "4133470603409493": dashboard.Zone.ZONE_6,
         "4145470815511596": dashboard.Zone.ZONE_7,
+        "24976215742026849": dashboard.Zone.ZONE_8,
     }
 
     requested_zones = messenger_ids.get(chat_id)
