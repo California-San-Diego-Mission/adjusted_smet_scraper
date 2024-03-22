@@ -136,5 +136,4 @@ def main():
             time.sleep(15)
 
 if __name__ == "__main__":
-    # get_score({})
     main()

@@ -6,6 +6,7 @@ from datetime import timedelta
 from datetime import datetime
 import requests
 import dashboard
+import os
 
 class ChurchInvalidCreds(Exception):
     """Exception for invalid church credentials"""
@@ -148,6 +149,47 @@ class ChurchClient:
                 print("Cookies might be invalid, logging in")
                 self.login()
                 return self.get_people_list(recurse=True)
+
+    def get_cached_people_list(self):
+        """Pulls the people list from the cache if available, or fetches new if none"""
+        # Check if the people folder exists
+        if not os.path.exists("people"):
+            os.mkdir("people")
+
+        # Lists are saved as <timestamp>.json
+        files = os.listdir("people")
+        if len(files) == 0:
+            # No files, fetch new
+            pl = self.get_people_list()
+            self.cache_people_list(pl)
+            return pl
+
+        # Get the most recent file
+        files.sort(reverse=True)
+        file = files[0]
+
+        # Get the timestamp
+        timestamp = int(file.split(".")[0])
+
+        # Check if the file is older than 2 hours
+        if datetime.now() - datetime.fromtimestamp(timestamp) > timedelta(hours=2):
+            # File is older than 1 hour, fetch new
+            pl = self.get_people_list()
+            self.cache_people_list(pl)
+            return pl
+
+        # Load the file
+        with open(f"people/{file}", "r", encoding="utf-8") as file:
+            return json.load(file)
+
+    def cache_people_list(self, people_list):
+        """Saves the people list to the cache"""
+        # Get the current time
+        timestamp = int(datetime.now().timestamp())
+
+        # Save the file
+        with open(f"people/{timestamp}.json", "w", encoding="utf-8") as file:
+            json.dump(people_list, file, indent=4)
 
     def get_person_timeline(self, person_guid):
         """Gets the details for a single person from the referral manager"""

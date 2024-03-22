@@ -1,6 +1,7 @@
 session.json
 g_service.json
 /reports
+/people
 geckodriver.log
 /__pycache__
 *.json
