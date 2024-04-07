@@ -164,6 +164,9 @@ def parse_timeline(timeline_data):
                     attempts += 1
                 if attempts > 4:
                     return False
+            case 'STOPPED_TEACHING':
+                # If the referral was dropped after it was received
+                return False
             case 'NEW_REFERRAL':
                 return True
     # If there's no contacts, return true

@@ -3,6 +3,7 @@
 import time
 import random
 import holly
+import padres
 
 def process_message(msg: holly.ParsedHollyMessage):
     """Creates responses based on the message"""
@@ -15,6 +16,15 @@ def process_message(msg: holly.ParsedHollyMessage):
     if (msg.sender == "Norm Merritt" and random.randint(0,4) == 3) or (msg.content[-2:] == ["Pres", "Merritt"] and len(msg.content) > 30):
         responses = ["yessir", "aye aye captain", "amen", "*salutes with paw*"]
         return random.choice(responses)
+
+    if (msg.loose_match("did padres score") or msg.loose_match("homerun")):
+        if padres.homerun(135, padres.get_yesterday_date()):
+            return "yes! go get your free burger today. you're welcome"
+        else:
+            return "no, the padres did not get a homerun. very cringe."
+
+    if msg.is_targeted() and msg.match("how should i find"):
+        return "no"
     return None
 
 def main():

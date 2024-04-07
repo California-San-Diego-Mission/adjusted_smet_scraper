@@ -15,13 +15,23 @@ import chirch
 import dashboard
 
 AUTHORIZED_USERS = [
-    "Coxson",
-    "Nielson",
-    "Meilstrup",
     "Bugby",
     "Widdison",
-    "Rowley"
 ]
+
+def load_today_report():
+    """Tries to load a report from today, returns None if none"""
+    reports = [f for f in listdir('reports') if isfile(join('reports', f))]
+    now_str = datetime.datetime.now().strftime('%Y-%m-%d')
+    for report in reports:
+        if now_str in report:
+            print('Loading today\'s report')
+            # If a report for today already exists, send it
+            with open(f'reports/{report}', 'r', encoding='utf-8') as f:
+                # Parse it as a JSON
+                report_data = json.load(f)
+                return report_data['zones']
+    return None
 
 def generate_report(s: socket.socket, chat_id: str, sender: str):
     """Generates a report of uncontacted referrals"""
@@ -47,7 +57,7 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
                 break
         if not authorized:
             s.send(json.dumps({
-                "content": "new tennis ball, who dis?",
+                "content": "this isn't a zone chat ya silly goose",
                 "chat_id": chat_id,
                 "sender": ""
             }).encode('utf-8'))
@@ -56,26 +66,12 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
     else:
         requested_zones = [requested_zones]
 
-    zones = None
-
-    # Determine if a report already exists in a reports folder
-    # Get the list of files in /reports
-    reports = [f for f in listdir('reports') if isfile(join('reports', f))]
-    now_str = datetime.datetime.now().strftime('%Y-%m-%d')
-    for report in reports:
-        if now_str in report:
-            print('Loading today\'s report')
-            # If a report for today already exists, send it
-            with open(f'reports/{report}', 'r', encoding='utf-8') as f:
-                # Parse it as a JSON
-                report_data = json.load(f)
-                zones = report_data['zones']
+    zones = load_today_report()
 
     if zones is None:
         print('No report for today, generating a new one')
-        s.send(json.dumps({'content': '*bark bark* (One minute)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
+        s.send(json.dumps({'content': '*bark bark* (one minute)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
         client = chirch.ChurchClient()
-        # persons = json.load(open('test.json', 'r', encoding='utf-8'))['persons']
         persons = client.get_cached_people_list()['persons']
         troubled = []
         for p in persons:
@@ -85,7 +81,6 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
             if res['status'] != dashboard.ReferralStatus.SUCCESSFUL:
                 troubled.append(res)
 
-        s.send(json.dumps({'content': f'{len(troubled)} uncontacted referrals', 'chat_id': chat_id, 'sender': 'urmom'}).encode('utf-8'))
         print(f'{len(troubled)} uncontacted referrals')
 
         zones = {}
@@ -110,7 +105,7 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
     for requested_zone in requested_zones:
         zone = zones.get(str(requested_zone.value))
         if zone is None:
-            s.send(json.dumps({'content': f"{requested_zone.name.replace('_', ' ').capitalize()}\nNo uncontacted referrals! :)", 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
+            s.send(json.dumps({'content': f"{requested_zone.name.replace('_', ' ').capitalize()}\nNO UNCONTACTED REFERRALS!!!  *happy zooms around the backyard*", 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
         print(zone)
         if zone:
             message = f"{requested_zone.name.replace('_', ' ').capitalize()}\n"
@@ -121,6 +116,7 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
                 message += "\n"
             print(message)
             s.send(json.dumps({'content': message, 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
+        
 
 def process_json_object(json_data):
     """Checks if this message was for us"""
