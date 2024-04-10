@@ -4,6 +4,7 @@ from datetime import timedelta
 from datetime import datetime
 from enum import Enum
 
+
 class FbPageId(Enum):
     """SLC's ID for each page"""
     ENGLISH = "2994"
@@ -17,12 +18,14 @@ class FbPageId(Enum):
     TAGALOG = "6654"
     ASL = "6735"
 
+
 class ClaimedStatus(Enum):
     """Status of claimed interactions from the dashboard JSON"""
     NOT_CONTACTED = "0"
     NO_RESPONSE = "1"
     POSITIVE_RESPONSE = "2"
     NEGATIVE_RESPONSE = "3"
+
 
 class Zone(int, Enum):
     """Each of the mission zones"""
@@ -35,11 +38,13 @@ class Zone(int, Enum):
     ZONE_7 = 500366346
     ZONE_8 = 500576704
 
+
 class ReferralStatus(Enum):
     """The status a referral can be in"""
     NOT_ATTEMPTED = 10
     NOT_SUCCESSFUL = 20
     SUCCESSFUL = 30
+
 
 class PersonStatus(Enum):
     """The status of a person"""
@@ -49,15 +54,16 @@ class PersonStatus(Enum):
     PROGRESSING_GREEN = 4
     NEW_MEMBER = 6
     NOT_INTERESTED = 20
-    NOT_INTERESTED_DECLARED = 21 # canceled referral
+    NOT_INTERESTED_DECLARED = 21  # canceled referral
     NOT_PROGRESSING = 22
     UNABLE_TO_CONTACT = 23
-    PRANK = 25 # Fake name, doesn't show up in referral manager, unsure
+    PRANK = 25  # Fake name, doesn't show up in referral manager, unsure
     NOT_RECENTLY_CONTACTED = 26
     TOO_BUSY = 27
     OUTSIDE_AREA_STRENGTH = 28
     MEMBER = 40
     MOVED = 201
+
 
 def parse_dashboard_json(json_data):
     """Parses a JSON object into a dictionary of pages"""
@@ -148,21 +154,17 @@ def parse_dashboard_json(json_data):
             print("Uh oh no data for ", page.name)
     return {'user': user_results, 'overview': overview_results}
 
+
 def parse_timeline(timeline_data):
     """
     Goes through the timeline and determines if the person should be on the list
     """
-    attempts = 0
     for event in timeline_data:
         match event['timelineItemType']:
             case 'CONTACT':
                 # If the contact is more than 48 hours old, return true
                 timestamp = datetime.fromtimestamp(event['itemDate'] / 1000)
                 if timestamp > datetime.now() - timedelta(hours=48):
-                    return False
-                if event['eventStatus'] is False:
-                    attempts += 1
-                if attempts > 4:
                     return False
             case 'STOPPED_TEACHING':
                 # If the referral was dropped after it was received
