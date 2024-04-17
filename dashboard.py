@@ -155,16 +155,21 @@ def parse_dashboard_json(json_data):
     return {'user': user_results, 'overview': overview_results}
 
 
-def parse_timeline(timeline_data):
+def parse_timeline(timeline_data, grey_dot=False):
     """
     Goes through the timeline and determines if the person should be on the list
     """
+    attempts = 0
     for event in timeline_data:
         match event['timelineItemType']:
             case 'CONTACT':
                 # If the contact is more than 48 hours old, return true
                 timestamp = datetime.fromtimestamp(event['itemDate'] / 1000)
                 if timestamp > datetime.now() - timedelta(hours=48):
+                    return False
+                if event['eventStatus'] is False:
+                    attempts += 1
+                if attempts > 4 and grey_dot:
                     return False
             case 'STOPPED_TEACHING':
                 # If the referral was dropped after it was received

@@ -4,9 +4,9 @@
 import json
 from datetime import timedelta
 from datetime import datetime
+import os
 import requests
 import dashboard
-import os
 
 class ChurchInvalidCreds(Exception):
     """Exception for invalid church credentials"""
@@ -241,6 +241,7 @@ class ChurchClient:
         except:
             print(f"Person status {status} not found")
 
+        grey_dot = False
         match res['status']:
             case dashboard.PersonStatus.MEMBER:
                 return None
@@ -256,6 +257,12 @@ class ChurchClient:
                 return None
             case dashboard.PersonStatus.PRANK:
                 return None
+            case dashboard.PersonStatus.NOT_INTERESTED:
+                grey_dot = True
+            case dashboard.PersonStatus.NOT_PROGRESSING:
+                grey_dot = True
+            case dashboard.PersonStatus.TOO_BUSY:
+                grey_dot = True
             case dashboard.PersonStatus.NOT_RECENTLY_CONTACTED:
                 return res
 
@@ -263,7 +270,7 @@ class ChurchClient:
             guid = person["personGuid"]
             print(f"Fetching timeline for {guid}")
             timeline = self.get_person_timeline(guid)
-            if dashboard.parse_timeline(timeline) is False:
+            if dashboard.parse_timeline(timeline, grey_dot) is False:
                 return None
 
         return res
