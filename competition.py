@@ -14,6 +14,8 @@ def handle_request(request: holly.ParsedHollyMessage):
     """Parses the text to determine if we need to react"""
     print(request)
     if request.is_targeted and (request.match('what score') or request.match('whats score') or request.match('who winning') or request.match('get score')):
+        # if request.chat_id != "7016741568410945":
+        #     return "shhhhhhh it's a secret"
         return get_score()
 
     return False
@@ -102,7 +104,7 @@ def get_score():
                 print(
                     f"{zone.name} - S:{zone_items[0]} A:{zone_items[1]} T:{zone_items[2]}")
                 zone_percentages[zone] = (
-                    (zone_items[0] + (zone_items[1] * 1.0)) / zone_items[2]) * 1000  # change me for weighted successful
+                    (zone_items[0] + (zone_items[1] * 0.3)) / zone_items[2]) * 1000  # change me for weighted successful
 
         # Rank the zones
         ranked = sorted(zone_percentages.items(),

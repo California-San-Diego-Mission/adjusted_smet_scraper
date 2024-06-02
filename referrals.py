@@ -1,4 +1,4 @@
-#pylint: disable=line-too-long
+# pylint: disable=line-too-long
 """
 Code to send uncontacted referrals to the ZLs every morning
 """
@@ -17,7 +17,9 @@ import dashboard
 AUTHORIZED_USERS = [
     "Bugby",
     "Widdison",
+    "Coxson"
 ]
+
 
 def load_today_report():
     """Tries to load a report from today, returns None if none"""
@@ -32,6 +34,7 @@ def load_today_report():
                 report_data = json.load(f)
                 return report_data['zones']
     return None
+
 
 def generate_report(s: socket.socket, chat_id: str, sender: str):
     """Generates a report of uncontacted referrals"""
@@ -62,7 +65,8 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
                 "sender": ""
             }).encode('utf-8'))
             return
-        requested_zones = [dashboard.Zone.ZONE_1, dashboard.Zone.ZONE_2, dashboard.Zone.ZONE_3, dashboard.Zone.ZONE_4, dashboard.Zone.ZONE_5, dashboard.Zone.ZONE_6, dashboard.Zone.ZONE_7, dashboard.Zone.ZONE_8]
+        requested_zones = [dashboard.Zone.ZONE_1, dashboard.Zone.ZONE_2, dashboard.Zone.ZONE_3, dashboard.Zone.ZONE_4,
+                           dashboard.Zone.ZONE_5, dashboard.Zone.ZONE_6, dashboard.Zone.ZONE_7, dashboard.Zone.ZONE_8]
     else:
         requested_zones = [requested_zones]
 
@@ -70,7 +74,8 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
 
     if zones is None:
         print('No report for today, generating a new one')
-        s.send(json.dumps({'content': '*bark bark* (one minute)', 'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
+        s.send(json.dumps({'content': '*bark bark* (one minute)',
+               'chat_id': chat_id, 'sender': '_'}).encode('utf-8'))
         client = chirch.ChurchClient()
         persons = client.get_cached_people_list()['persons']
         troubled = []
@@ -99,13 +104,16 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
 
         # Save the zone messages to reports/timestamp.json
         now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-        json.dump({'zones': zones}, open(f'reports/{now}.json', 'w', encoding='utf-8'), indent=4)
-        zones = json.loads(json.dumps({'zones': zones}))['zones'] # lazy I know
+        json.dump({'zones': zones}, open(
+            f'reports/{now}.json', 'w', encoding='utf-8'), indent=4)
+        zones = json.loads(json.dumps({'zones': zones}))[
+            'zones']  # lazy I know
 
     for requested_zone in requested_zones:
         zone = zones.get(str(requested_zone.value))
         if zone is None:
-            s.send(json.dumps({'content': f"{requested_zone.name.replace('_', ' ').capitalize()}\nNO UNCONTACTED REFERRALS!!!  *happy zooms around the backyard*", 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
+            s.send(json.dumps({'content': f"{requested_zone.name.replace('_', ' ').capitalize()}\nNO UNCONTACTED REFERRALS!!!  *happy zooms around the backyard*",
+                   'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
         print(zone)
         if zone:
             message = f"{requested_zone.name.replace('_', ' ').capitalize()}\n"
@@ -115,12 +123,14 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
                     message += f"  - {name}\n"
                 message += "\n"
             print(message)
-            s.send(json.dumps({'content': message, 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
-        
+            s.send(json.dumps(
+                {'content': message, 'chat_id': chat_id, 'sender': ''}).encode('utf-8'))
+
 
 def process_json_object(json_data):
     """Checks if this message was for us"""
-    content = json_data['content'].lower().replace('go', '').replace(',', '').replace('  ', ' ')
+    content = json_data['content'].lower().replace(
+        'go', '').replace(',', '').replace('  ', ' ')
     if 'holly fetch' in content:
         return True
     else:
@@ -143,15 +153,18 @@ def main():
                     pls_go = process_json_object(json_data)
                     if pls_go:
                         try:
-                            generate_report(s, json_data['chat_id'], json_data['sender'])
-                        except Exception as e: #pylint: disable=broad-exception-caught
+                            generate_report(
+                                s, json_data['chat_id'], json_data['sender'])
+                        except Exception as e:  # pylint: disable=broad-exception-caught
                             print(e.with_traceback(None))
-                            s.send(json.dumps({'content': '*sad bark* (I couldn\'t generate a report)', 'chat_id': json_data['chat_id'], 'sender': '_'}).encode('utf-8'))
+                            s.send(json.dumps({'content': f'*sad bark* (I couldn\'t generate a report)\n{e}',
+                                   'chat_id': json_data['chat_id'], 'sender': '_'}).encode('utf-8'))
                     data = []
 
         except (socket.error, json.JSONDecodeError) as e:
             print(f"Error: {e}")
             time.sleep(30)
+
 
 if __name__ == "__main__":
     main()

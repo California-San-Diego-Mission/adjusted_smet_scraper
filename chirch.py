@@ -1,4 +1,4 @@
-#pylint: disable=line-too-long disable=bare-except
+# pylint: disable=line-too-long disable=bare-except
 """Log into church servers and get data for SMET"""
 
 import json
@@ -8,17 +8,22 @@ import os
 import requests
 import dashboard
 
+
 class ChurchInvalidCreds(Exception):
     """Exception for invalid church credentials"""
+
 
 class ChurchHttpError(Exception):
     """Exception for church http errors"""
 
+
 class ChurchParseError(Exception):
     """Exception for church parse errors"""
 
+
 class ChurchClient:
     """Church client class"""
+
     def __init__(self):
         self.client = requests.Session()
 
@@ -33,6 +38,7 @@ class ChurchClient:
             self.state = session_data.get("state")
             self.client_id = session_data.get("client_id")
             self.state_token = session_data.get("stateToken")
+            self.bearer = session_data.get("bearer")
 
             # Import cookies
             cookies = session_data.get("cookies")
@@ -53,7 +59,8 @@ class ChurchClient:
                 "state": self.state,
                 "client_id": self.client_id,
                 "stateToken": self.state_token,
-                "cookies": dict(self.client.cookies)
+                "cookies": dict(self.client.cookies),
+                "bearer": self.bearer
             }, file, indent=4)
 
     def login(self):
@@ -64,32 +71,28 @@ class ChurchClient:
         # Set user-agent
         self.client.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36"
 
-        # Set OG cookies
-        res = self.client.get("https://id.churchofjesuschrist.org/auth/services/devicefingerprint")
-        if not res.status_code == 200:
-            print("Unable to fingerprint this device")
+        # Get the redirect URL from the login page, and then extract the state token
+        res = self.client.get(
+            "https://referralmanager.churchofjesuschrist.org")
+        if res.status_code != 200:
             raise ChurchHttpError
-        self.nonce = self.client.post("https://id.churchofjesuschrist.org/api/v1/internal/device/nonce").json().get("nonce")
 
-        # Get the state and client_id
-        res = self.client.get("https://referralmanager.churchofjesuschrist.org/?lang=eng")
-        if not res.status_code == 200:
-            print("Failed to fetch the state and client ID from the base site")
-            raise ChurchHttpError
-        print(res.url)
-        self.state = res.url.split("state=")[1].split("&")[0]
-        self.client_id = res.url.split("client_id=")[1].split("&")[0]
+        # Extract the JSON embedded in the HTML
+        json_data = res.text.split('\"stateToken\":\"')[
+            1].split('\",')[0]
+        # Decode the nasty stuff the church does to JSON in HTML
+        self.state_token = json_data.encode().decode('unicode-escape')
 
-        # Get the stateToken
-        for _ in range(5):
-            res = self.client.get(f"https://id.churchofjesuschrist.org/oauth2/default/v1/authorize?response_type=code&redirect_uri=https%3A%2F%2Freferralmanager.churchofjesuschrist.org%2Flogin&scope=openid%20profile%20offline_access&state={self.state}&client_id={self.client_id}").text
-            self.state_token = res.split("\"stateToken\":\"")[1].split("\"")[0].encode().decode('unicode-escape')
-            if not '\\' in self.state_token:
-                break
         print(self.state_token)
 
+        # Get the state handle
+        res = self.client.post(
+            "https://id.churchofjesuschrist.org/idp/idx/introspect", data=json.dumps({"stateToken": self.state_token}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        self.state_token = res.json()["stateHandle"]
+
         # Send the username with the stateToken
-        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/identify", data=json.dumps({"stateHandle": self.state_token, "identifier": self.username}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/identify", data=json.dumps(
+            {"stateHandle": self.state_token, "identifier": self.username}), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if not res.status_code == 200:
             print(res)
             print(res.text)
@@ -98,25 +101,37 @@ class ChurchClient:
         self.state_token = res["stateHandle"]
 
         # Send the password with the stateToken
-        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/challenge/answer", data=json.dumps({"stateHandle": self.state_token, "credentials": {"passcode": self.password}}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/challenge/answer", data=json.dumps({"stateHandle": self.state_token, "credentials": {
+                               "passcode": self.password}}), headers={"Content-Type": "application/json", "Accept": "application/json"})
         if not res.status_code == 200:
             print(res)
             print(res.text)
             raise ChurchInvalidCreds
 
-        # Set the oauth token cookie on the client (I think)
-        self.client.get(f"https://id.churchofjesuschrist.org/login/step-up/redirect?stateToken={self.state_token}")
+        # Set the auth cookies
+        res = self.client.get(
+            res.json()["success"]["href"], allow_redirects=False)
+
+        # Get the redirect URL from res
+        res = self.client.get(res.headers["Location"], allow_redirects=False)
+
+        # Get the bearer token
+        res = self.client.get(
+            "https://referralmanager.churchofjesuschrist.org/services/auth", headers={"Accept": "application/json", "Authorization": ""})
+        self.bearer = res.json()["token"]
 
         # Save the state for future launches
         self.save()
 
     def get_referral_dashboard_counts(self):
         """Get the dashboard counts from referral manager"""
-        res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
+        res = self.client.get(
+            "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
         if res.status_code == 500:
             print("Cookies are invalid, logging in")
             self.login()
-            res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
+            res = self.client.get(
+                "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError
@@ -128,7 +143,9 @@ class ChurchClient:
 
     def get_people_list(self, recurse=False):
         """Gets the list of everyone from the referral manager. This is a HUGE request at roughly 8mb. Smh the church is bad"""
-        res = self.client.get("https://referralmanager.churchofjesuschrist.org/services/people/mission/14289")
+        res = self.client.get(
+            "https://referralmanager.churchofjesuschrist.org/services/people/mission/14289", headers={"Authorization": f"Bearer {self.bearer}"},
+        )
         if res.status_code == 500:
             if recurse:
                 raise ChurchHttpError
@@ -193,7 +210,8 @@ class ChurchClient:
 
     def get_person_timeline(self, person_guid):
         """Gets the details for a single person from the referral manager"""
-        res = self.client.get(f"https://referralmanager.churchofjesuschrist.org/services/progress/timeline/{person_guid}")
+        res = self.client.get(
+            f"https://referralmanager.churchofjesuschrist.org/services/progress/timeline/{person_guid}")
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError
