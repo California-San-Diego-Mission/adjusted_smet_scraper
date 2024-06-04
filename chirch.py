@@ -117,7 +117,7 @@ class ChurchClient:
 
         # Get the bearer token
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/auth", headers={"Accept": "application/json", "Authorization": ""})
+            "https://referralmanager.churchofjesuschrist.org/services/auth", headers={"Accept": "application/json, text/plain, */*", "Authorization": ""})
         self.bearer = res.json()["token"]
 
         # Save the state for future launches
