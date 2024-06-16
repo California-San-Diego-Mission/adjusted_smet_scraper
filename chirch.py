@@ -243,6 +243,16 @@ class ChurchClient:
         if assigned_date > datetime.now() - timedelta(hours=48):
             return None
 
+        # Ignore referrals from the MCRD since they can only be contacted on Sunday
+        if "Marine Corps" in person['orgName']:
+            return None
+        # MCRD referral names can also end with (Fox), (Bravo)
+        first_name = person['firstName']
+        if first_name:
+            first_name = first_name.lower()
+            if "(fox)" in first_name or "(bravo)" in first_name:
+                return None
+
         zone = person["zoneId"]
         if zone is None:
             # If the referral is marked as a member, there will be no teaching area/zone etc
