@@ -125,13 +125,20 @@ class ChurchClient:
 
     def get_referral_dashboard_counts(self):
         """Get the dashboard counts from referral manager"""
+        headers = {
+            "Referer": "https://referralmanager.churchofjesuschrist.org/dashboard/(right-sidebar:tasks)",
+            "Authorization": f"Bearer {self.bearer}",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en",
+            "Time-Zone": "America/Los_Angeles",
+        }
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
+            "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts", headers=headers)
         if res.status_code == 500:
             print("Cookies are invalid, logging in")
             self.login()
             res = self.client.get(
-                "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts")
+                "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts", headers=headers)
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError
