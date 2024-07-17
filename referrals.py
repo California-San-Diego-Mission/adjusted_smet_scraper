@@ -48,6 +48,7 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
         "4133470603409493": dashboard.Zone.ZONE_6,
         "4145470815511596": dashboard.Zone.ZONE_7,
         "24976215742026849": dashboard.Zone.ZONE_8,
+        "7554625987953132": dashboard.Zone.ZONE_8, # Jackson and Holly group chat
     }
 
     requested_zones = messenger_ids.get(chat_id)
@@ -69,6 +70,19 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
                            dashboard.Zone.ZONE_5, dashboard.Zone.ZONE_6, dashboard.Zone.ZONE_7, dashboard.Zone.ZONE_8]
     else:
         requested_zones = [requested_zones]
+        now_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        today = {}
+        try:
+            today = json.load(open("fetched_today.json", "r"))
+        except:
+            print("Making new today JSON")
+            today = {"today": now_str, "fetched": []}
+        if today["today"] != now_str:
+            today["fetched"] = []
+            today["today"] = now_str
+        today["fetched"].append(requested_zones[0])
+        json.dump(today, open("fetched_today.json", "w"))
+
 
     zones = load_today_report()
 

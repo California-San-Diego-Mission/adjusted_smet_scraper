@@ -31,7 +31,7 @@ def get_score():
         # get the last Sunday
         # last_sunday = now - datetime.timedelta(days=now.weekday(), weeks=1)
         # last_sunday = last_sunday.replace(hour=0, minute=0, second=0, microsecond=0)
-        last_sunday = datetime.datetime.fromtimestamp(1712905200)
+        last_sunday = datetime.datetime.fromtimestamp(1720033200)
 
         zones = {}
         total_referrals = 0
