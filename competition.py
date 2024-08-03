@@ -71,24 +71,6 @@ def get_score():
                     continue
                 zone = dashboard.Zone(zone_id)
 
-                # Determine if it's actually a dot
-                dot_status = person.get("personStatusId")
-                dot_status = dashboard.PersonStatus(dot_status)
-                permissable_dots = [
-                    dashboard.PersonStatus.BETTER_GREEN,
-                    dashboard.PersonStatus.GREEN,
-                    dashboard.PersonStatus.MOVED,
-                    dashboard.PersonStatus.NOT_INTERESTED,
-                    dashboard.PersonStatus.NOT_PROGRESSING,
-                    dashboard.PersonStatus.NOT_RECENTLY_CONTACTED,
-                    dashboard.PersonStatus.PROGRESSING_GREEN,
-                    dashboard.PersonStatus.TOO_BUSY,
-                    dashboard.PersonStatus.YELLOW,
-                ]
-
-                if dot_status not in permissable_dots:
-                    continue
-
                 # If the zone doesn't exist, insert it
                 if zones.get(zone) is None:
                     zones[zone] = (0, 0, 0, [])
