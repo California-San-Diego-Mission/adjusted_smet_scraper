@@ -142,7 +142,7 @@ def get_score():
 
         zone_percentages = {}
         for zone, zone_items in zones.items():
-            time_average = statistics.mean(zone_items[3])
+            time_average = statistics.median(zone_items[3])
             if zone_items[2] != 0:
                 print(
                     f"{zone.name} - S:{zone_items[0]} A:{zone_items[1]} T:{zone_items[2]} M:{time_average}"
