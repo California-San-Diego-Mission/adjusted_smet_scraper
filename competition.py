@@ -4,9 +4,9 @@
 import datetime
 import time
 import random
+from typing import Union
 import mysql.connector
 import os
-import pytz
 import statistics
 from dotenv import load_dotenv
 
@@ -29,14 +29,12 @@ def handle_request(request: holly.ParsedHollyMessage):
         # if request.chat_id != "7016741568410945":
         #     return "shhhhhhh it's a secret"
         return get_score()
-
     return False
 
 
 def get_score():
     """Gets the score of contacted/total referrals"""
     try:
-
         mydb = mysql.connector.connect(
             host="localhost",
             user=os.getenv("MYSQL_USERNAME"),
@@ -48,7 +46,6 @@ def get_score():
         client = chirch.ChurchClient()
         persons = client.get_cached_people_list()["persons"]
 
-        now = datetime.datetime.now()
         # get the last transfer
         last_transfer = datetime.datetime.fromtimestamp(1720033200)
 
@@ -59,15 +56,20 @@ def get_score():
         for person in persons:
             assigned_date = person.get("referralAssignedDate")
             if assigned_date is None:
-                print("Person does not have a referralAssignedDate", person.get("personGuid"))
+                print(
+                    "Person does not have a referralAssignedDate",
+                    person.get("personGuid"),
+                )
                 continue
-            assigned_date = datetime.datetime.fromtimestamp(assigned_date / 1000)
+            assigned_date = datetime.datetime.fromtimestamp(
+                assigned_date / 1000)
             if assigned_date < last_transfer:
                 continue
             try:
                 zone_id = person.get("zoneId")
                 if zone_id is None:
-                    print("Person does not have a zoneId", person.get("personGuid"))
+                    print("Person does not have a zoneId",
+                          person.get("personGuid"))
                     continue
                 zone = dashboard.Zone(zone_id)
 
@@ -77,7 +79,10 @@ def get_score():
 
                 status_id = person.get("referralStatusId")
                 if status_id is None:
-                    print("Person doesn't have referralStatusId: ", person.get("personGuid"))
+                    print(
+                        "Person doesn't have referralStatusId: ",
+                        person.get("personGuid"),
+                    )
                     continue
                 status = dashboard.ReferralStatus(status_id)
 
@@ -132,11 +137,13 @@ def get_score():
                     f"{zone.name} - S:{zone_items[0]} A:{zone_items[1]} T:{zone_items[2]} M:{time_average}"
                 )
                 zone_percentages[zone] = (
-                    ((zone_items[0] + (zone_items[1] * 0.5)) / zone_items[2]) * 1000
+                    ((zone_items[0] + (zone_items[1] * 0.5)) /
+                     zone_items[2]) * 1000
                 ) - time_average  # change me for weighted successful
 
         # Rank the zones
-        ranked = sorted(zone_percentages.items(), key=lambda x: x[1], reverse=True)
+        ranked = sorted(zone_percentages.items(),
+                        key=lambda x: x[1], reverse=True)
 
         # Create the string
         res = "the current winners of my dog bowl. are the following hooomans:\n\n"
@@ -173,7 +180,7 @@ def get_score():
         return "*bark* unable to fetch the score *bark*"
 
 
-def get_contact_time(guid: str, cursor, church_client) -> int:
+def get_contact_time(guid: str, cursor, church_client) -> Union[float, None]:
     cursor.execute("SELECT contact_time FROM people WHERE guid = %s", (guid,))
     res = cursor.fetchone()
     if res is None:
@@ -181,11 +188,14 @@ def get_contact_time(guid: str, cursor, church_client) -> int:
         timeline = church_client.get_person_timeline(guid)
         referral_time = 0
         contact_time = 0
-        for idx, event in enumerate(timeline):
+        for event in timeline:
             if event["timelineItemType"] == "NEW_REFERRAL":
                 referral_time = int(event["itemDate"] / 1000)
                 break
-            elif event["timelineItemType"] == "CONTACT" or event["timelineItemType"] == "TEACHING":
+            elif (
+                event["timelineItemType"] == "CONTACT"
+                or event["timelineItemType"] == "TEACHING"
+            ):
                 contact_time = int(event["itemDate"] / 1000)
         if referral_time == 0 or contact_time == 0:
             return None
@@ -226,7 +236,8 @@ def adjust_epoch_time(epoch_time):
         next_day = dt
         if dt.hour > 10:  # doesn't have to be 10, just a number that checks if AM/PM
             next_day = dt + datetime.timedelta(days=1)
-        adjusted_time = next_day.replace(hour=6, minute=30, second=0, microsecond=0)
+        adjusted_time = next_day.replace(
+            hour=6, minute=30, second=0, microsecond=0)
         return adjusted_time
 
 
