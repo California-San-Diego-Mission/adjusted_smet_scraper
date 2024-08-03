@@ -150,7 +150,7 @@ def get_score():
                     f"{zone.name} - S:{zone_items[0]} A:{zone_items[1]} T:{zone_items[2]} M:{time_average}"
                 )
                 zone_percentages[zone] = (
-                    ((zone_items[0] + (zone_items[1] * 0.8)) / zone_items[2]) * 1000
+                    ((zone_items[0] + (zone_items[1] * 0.5)) / zone_items[2]) * 1000
                 ) - time_average  # change me for weighted successful
 
         # Rank the zones
