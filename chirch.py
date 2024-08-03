@@ -52,16 +52,20 @@ class ChurchClient:
         """Save the state of the client to a file"""
         with open("session.json", "w", encoding="utf-8") as file:
             # Write to json
-            json.dump({
-                "username": self.username,
-                "password": self.password,
-                "nonce": self.nonce,
-                "state": self.state,
-                "client_id": self.client_id,
-                "stateToken": self.state_token,
-                "cookies": dict(self.client.cookies),
-                "bearer": self.bearer
-            }, file, indent=4)
+            json.dump(
+                {
+                    "username": self.username,
+                    "password": self.password,
+                    "nonce": self.nonce,
+                    "state": self.state,
+                    "client_id": self.client_id,
+                    "stateToken": self.state_token,
+                    "cookies": dict(self.client.cookies),
+                    "bearer": self.bearer,
+                },
+                file,
+                indent=4,
+            )
 
     def login(self):
         """Log into the church servers, setting cookies and tokens"""
@@ -69,30 +73,38 @@ class ChurchClient:
         self.client.cookies.clear()
 
         # Set user-agent
-        self.client.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36"
+        self.client.headers["User-Agent"] = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36"
+        )
 
         # Get the redirect URL from the login page, and then extract the state token
-        res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org")
+        res = self.client.get("https://referralmanager.churchofjesuschrist.org")
         if res.status_code != 200:
             raise ChurchHttpError
 
         # Extract the JSON embedded in the HTML
-        json_data = res.text.split('\"stateToken\":\"')[
-            1].split('\",')[0]
+        json_data = res.text.split('"stateToken":"')[1].split('",')[0]
         # Decode the nasty stuff the church does to JSON in HTML
-        self.state_token = json_data.encode().decode('unicode-escape')
+        self.state_token = json_data.encode().decode("unicode-escape")
 
         print(self.state_token)
 
         # Get the state handle
         res = self.client.post(
-            "https://id.churchofjesuschrist.org/idp/idx/introspect", data=json.dumps({"stateToken": self.state_token}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+            "https://id.churchofjesuschrist.org/idp/idx/introspect",
+            data=json.dumps({"stateToken": self.state_token}),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
         self.state_token = res.json()["stateHandle"]
 
         # Send the username with the stateToken
-        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/identify", data=json.dumps(
-            {"stateHandle": self.state_token, "identifier": self.username}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        res = self.client.post(
+            "https://id.churchofjesuschrist.org/idp/idx/identify",
+            data=json.dumps(
+                {"stateHandle": self.state_token, "identifier": self.username}
+            ),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
         if not res.status_code == 200:
             print(res)
             print(res.text)
@@ -101,23 +113,35 @@ class ChurchClient:
         self.state_token = res["stateHandle"]
 
         # Send the password with the stateToken
-        res = self.client.post("https://id.churchofjesuschrist.org/idp/idx/challenge/answer", data=json.dumps({"stateHandle": self.state_token, "credentials": {
-                               "passcode": self.password}}), headers={"Content-Type": "application/json", "Accept": "application/json"})
+        res = self.client.post(
+            "https://id.churchofjesuschrist.org/idp/idx/challenge/answer",
+            data=json.dumps(
+                {
+                    "stateHandle": self.state_token,
+                    "credentials": {"passcode": self.password},
+                }
+            ),
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
         if not res.status_code == 200:
             print(res)
             print(res.text)
             raise ChurchInvalidCreds
 
         # Set the auth cookies
-        res = self.client.get(
-            res.json()["success"]["href"], allow_redirects=False)
+        res = self.client.get(res.json()["success"]["href"], allow_redirects=False)
 
         # Get the redirect URL from res
         res = self.client.get(res.headers["Location"], allow_redirects=False)
 
         # Get the bearer token
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/auth", headers={"Accept": "application/json, text/plain, */*", "Authorization": ""})
+            "https://referralmanager.churchofjesuschrist.org/services/auth",
+            headers={
+                "Accept": "application/json, text/plain, */*",
+                "Authorization": "",
+            },
+        )
         self.bearer = res.json()["token"]
 
         # Save the state for future launches
@@ -133,12 +157,16 @@ class ChurchClient:
             "Time-Zone": "America/Los_Angeles",
         }
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts", headers=headers)
+            "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts",
+            headers=headers,
+        )
         if res.status_code == 500:
             print("Cookies are invalid, logging in")
             self.login()
             res = self.client.get(
-                "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts", headers=headers)
+                "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts",
+                headers=headers,
+            )
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError
@@ -219,7 +247,8 @@ class ChurchClient:
     def get_person_timeline(self, person_guid):
         """Gets the details for a single person from the referral manager"""
         res = self.client.get(
-            f"https://referralmanager.churchofjesuschrist.org/services/progress/timeline/{person_guid}")
+            f"https://referralmanager.churchofjesuschrist.org/services/progress/timeline/{person_guid}"
+        )
         if res.status_code != 200:
             print(res)
             raise ChurchHttpError
@@ -232,17 +261,17 @@ class ChurchClient:
     def parse_person(self, person):
         """Get all the critical information from the person"""
         res = {}
-        res['guid'] = person["personGuid"]
-        res['first_name'] = person["firstName"]
-        res['last_name'] = person["lastName"]
-        res['area_name'] = person["areaName"]
+        res["guid"] = person["personGuid"]
+        res["first_name"] = person["firstName"]
+        res["last_name"] = person["lastName"]
+        res["area_name"] = person["areaName"]
 
         status = person["referralStatusId"]
         if status is None:
             # This means the referral was canceled
             return None
-        res['referral_status'] = dashboard.ReferralStatus(status)
-        if res['referral_status'] == dashboard.ReferralStatus.SUCCESSFUL:
+        res["referral_status"] = dashboard.ReferralStatus(status)
+        if res["referral_status"] == dashboard.ReferralStatus.SUCCESSFUL:
             return None
 
         assigned_date = person["referralAssignedDate"]
@@ -252,10 +281,10 @@ class ChurchClient:
             return None
 
         # Ignore referrals from the MCRD since they can only be contacted on Sunday
-        if "Marine Corps" in person['orgName']:
+        if "Marine Corps" in person["orgName"]:
             return None
         # MCRD referral names can also end with (Fox), (Bravo)
-        first_name = person['firstName']
+        first_name = person["firstName"]
         if first_name:
             first_name = first_name.lower()
             if "(fox)" in first_name or "(bravo)" in first_name:
@@ -266,19 +295,19 @@ class ChurchClient:
             # If the referral is marked as a member, there will be no teaching area/zone etc
             return None
         try:
-            res['zone'] = dashboard.Zone(zone)
+            res["zone"] = dashboard.Zone(zone)
         except:
             print(f"Zone {zone} not found")
             return None
 
         status = person["personStatusId"]
         try:
-            res['status'] = dashboard.PersonStatus(status)
+            res["status"] = dashboard.PersonStatus(status)
         except:
             print(f"Person status {status} not found")
 
         grey_dot = False
-        match res['status']:
+        match res["status"]:
             case dashboard.PersonStatus.MEMBER:
                 return None
             case dashboard.PersonStatus.NEW_MEMBER:
@@ -302,7 +331,7 @@ class ChurchClient:
             case dashboard.PersonStatus.NOT_RECENTLY_CONTACTED:
                 return res
 
-        if res['referral_status'] == dashboard.ReferralStatus.NOT_SUCCESSFUL:
+        if res["referral_status"] == dashboard.ReferralStatus.NOT_SUCCESSFUL:
             guid = person["personGuid"]
             print(f"Fetching timeline for {guid}")
             timeline = self.get_person_timeline(guid)
