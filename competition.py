@@ -59,6 +59,7 @@ def get_score():
         for person in persons:
             assigned_date = person.get("referralAssignedDate")
             if assigned_date is None:
+                print("Person does not have a referralAssignedDate", person.get("personGuid"))
                 continue
             assigned_date = datetime.datetime.fromtimestamp(assigned_date / 1000)
             if assigned_date < last_transfer:
@@ -66,6 +67,7 @@ def get_score():
             try:
                 zone_id = person.get("zoneId")
                 if zone_id is None:
+                    print("Person does not have a zoneId", person.get("personGuid"))
                     continue
                 zone = dashboard.Zone(zone_id)
 
@@ -93,6 +95,7 @@ def get_score():
 
                 status_id = person.get("referralStatusId")
                 if status_id is None:
+                    print("Person doesn't have referralStatusId: ", person.get("personGuid"))
                     continue
                 status = dashboard.ReferralStatus(status_id)
 
@@ -115,7 +118,6 @@ def get_score():
                         zones[zone][2] + 1,
                         zones[zone][3],
                     )
-                    print(f"{zone.name}: {person.get('lastName')}")
                     total_referrals += 1
                 elif status == dashboard.ReferralStatus.NOT_SUCCESSFUL:
                     zones[zone] = (
