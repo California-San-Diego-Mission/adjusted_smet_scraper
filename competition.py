@@ -2,15 +2,17 @@
 """Competition code"""
 
 import datetime
-import time
-import random
-from typing import Union
-import mysql.connector
 import os
+import random
 import statistics
-from dotenv import load_dotenv
+import time
+from dataclasses import dataclass, field
+from typing import Union
 
 import holly
+import mysql.connector
+from dotenv import load_dotenv
+
 import chirch
 import dashboard
 
@@ -32,6 +34,14 @@ def handle_request(request: holly.ParsedHollyMessage):
     return False
 
 
+@dataclass
+class ZoneResults:
+    successful: int = 0
+    attempted: int = 0
+    total: int = 0
+    contact_time: list[float] = field(default_factory=list)
+
+
 def get_score():
     """Gets the score of contacted/total referrals"""
     try:
@@ -49,7 +59,8 @@ def get_score():
         # get the last transfer
         last_transfer = datetime.datetime.fromtimestamp(1720033200)
 
-        zones = {}
+        zones: dict[dashboard.Zone, ZoneResults] = {}
+
         total_referrals = 0
         total_successful = 0
         total_attempted = 0
@@ -75,7 +86,7 @@ def get_score():
 
                 # If the zone doesn't exist, insert it
                 if zones.get(zone) is None:
-                    zones[zone] = (0, 0, 0, [])
+                    zones[zone] = ZoneResults()
 
                 status_id = person.get("referralStatusId")
                 if status_id is None:
@@ -96,32 +107,19 @@ def get_score():
                     )
                     if contact_time is not None:
                         mydb.commit()
-                        zones[zone][3].append(contact_time)
+                        zones[zone].contact_time.append(contact_time)
 
                 if status == dashboard.ReferralStatus.NOT_ATTEMPTED:
-                    zones[zone] = (
-                        zones[zone][0],
-                        zones[zone][1],
-                        zones[zone][2] + 1,
-                        zones[zone][3],
-                    )
+                    zones[zone].total += 1
                     total_referrals += 1
                 elif status == dashboard.ReferralStatus.NOT_SUCCESSFUL:
-                    zones[zone] = (
-                        zones[zone][0],
-                        zones[zone][1] + 1,
-                        zones[zone][2] + 1,
-                        zones[zone][3],
-                    )
+                    zones[zone].attempted += 1
+                    zones[zone].total += 1
                     total_referrals += 1
                     total_attempted += 1
                 elif status == dashboard.ReferralStatus.SUCCESSFUL:
-                    zones[zone] = (
-                        zones[zone][0] + 1,
-                        zones[zone][1],
-                        zones[zone][2] + 1,
-                        zones[zone][3],
-                    )
+                    zones[zone].successful += 1
+                    zones[zone].total += 1
                     total_referrals += 1
                     total_attempted += 1
                     total_successful += 1
@@ -131,15 +129,18 @@ def get_score():
 
         zone_percentages = {}
         for zone, zone_items in zones.items():
-            time_average = statistics.median(zone_items[3])
-            if zone_items[2] != 0:
+            time_average = statistics.median(zone_items.contact_time)
+            if zone_items.total != 0:
                 print(
-                    f"{zone.name} - S:{zone_items[0]} A:{zone_items[1]} T:{zone_items[2]} M:{time_average}"
+                    f"{zone.name} - S:{zone_items.successful} A:{zone_items.attempted} T:{zone_items.total} M:{time_average}"
                 )
                 zone_percentages[zone] = (
-                    ((zone_items[0] + (zone_items[1] * 0.5)) /
-                     zone_items[2]) * 1000
-                ) - time_average  # change me for weighted successful
+                    (
+                        (zone_items.successful + (zone_items.attempted * 0.5))
+                        / zone_items.total
+                    )
+                    * 1000
+                ) - time_average
 
         # Rank the zones
         ranked = sorted(zone_percentages.items(),
