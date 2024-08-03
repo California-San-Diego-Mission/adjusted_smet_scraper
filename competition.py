@@ -201,7 +201,7 @@ def get_contact_time(guid: str, cursor, church_client) -> int:
             if event["timelineItemType"] == "NEW_REFERRAL":
                 referral_time = int(event["itemDate"] / 1000)
                 break
-            elif event["timelineItemType"] == "CONTACT":
+            elif event["timelineItemType"] == "CONTACT" or event["timelineItemType"] == "TEACHING":
                 contact_time = int(event["itemDate"] / 1000)
         if referral_time == 0 or contact_time == 0:
             return None
