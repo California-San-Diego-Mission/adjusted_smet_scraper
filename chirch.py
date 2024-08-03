@@ -151,7 +151,8 @@ class ChurchClient:
     def get_people_list(self, recurse=False):
         """Gets the list of everyone from the referral manager. This is a HUGE request at roughly 8mb. Smh the church is bad"""
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/people/mission/14289", headers={"Authorization": f"Bearer {self.bearer}"},
+            "https://referralmanager.churchofjesuschrist.org/services/people/mission/14289?includeDroppedPersons=true",
+            headers={"Authorization": f"Bearer {self.bearer}"},
         )
         if res.status_code == 500:
             if recurse:
