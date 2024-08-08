@@ -2,6 +2,7 @@
 """Log into church servers and get data for SMET"""
 
 import json
+import dotenv
 from datetime import timedelta
 from datetime import datetime
 import os
@@ -26,12 +27,20 @@ class ChurchClient:
 
     def __init__(self):
         self.client = requests.Session()
+        # Read the dotenv file
+        dotenv.load_dotenv()
+
+        self.username = os.getenv("CHURCH_USERNAME")
+        self.password = os.getenv("CHURCH_PASSWORD")
+        try:
+            with open("session.json", "x") as file:
+                file.write("{}")
+        except FileExistsError:
+            print("Session exists")
 
         with open("session.json", "r", encoding="utf-8") as file:
             # Read to json
             session_data = json.load(file)
-            self.username = session_data["username"]
-            self.password = session_data["password"]
 
             # Determine if we have state, client_id, or stateToken
             self.nonce = session_data.get("nonce")
@@ -54,8 +63,6 @@ class ChurchClient:
             # Write to json
             json.dump(
                 {
-                    "username": self.username,
-                    "password": self.password,
                     "nonce": self.nonce,
                     "state": self.state,
                     "client_id": self.client_id,
@@ -77,8 +84,9 @@ class ChurchClient:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36"
         )
 
-        # Get the redirect URL from the login page, and then extract the state token
-        res = self.client.get("https://referralmanager.churchofjesuschrist.org")
+        # Get redirect URL from login page, then extract the state token
+        res = self.client.get(
+            "https://referralmanager.churchofjesuschrist.org")
         if res.status_code != 200:
             raise ChurchHttpError
 
@@ -93,7 +101,8 @@ class ChurchClient:
         res = self.client.post(
             "https://id.churchofjesuschrist.org/idp/idx/introspect",
             data=json.dumps({"stateToken": self.state_token}),
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={"Content-Type": "application/json",
+                     "Accept": "application/json"},
         )
         self.state_token = res.json()["stateHandle"]
 
@@ -103,7 +112,8 @@ class ChurchClient:
             data=json.dumps(
                 {"stateHandle": self.state_token, "identifier": self.username}
             ),
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={"Content-Type": "application/json",
+                     "Accept": "application/json"},
         )
         if not res.status_code == 200:
             print(res)
@@ -121,7 +131,8 @@ class ChurchClient:
                     "credentials": {"passcode": self.password},
                 }
             ),
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={"Content-Type": "application/json",
+                     "Accept": "application/json"},
         )
         if not res.status_code == 200:
             print(res)
@@ -129,7 +140,8 @@ class ChurchClient:
             raise ChurchInvalidCreds
 
         # Set the auth cookies
-        res = self.client.get(res.json()["success"]["href"], allow_redirects=False)
+        res = self.client.get(
+            res.json()["success"]["href"], allow_redirects=False)
 
         # Get the redirect URL from res
         res = self.client.get(res.headers["Location"], allow_redirects=False)
