@@ -124,8 +124,6 @@ def get_contact_time(guid: str, cursor, church_client) -> Union[float, None]:
     cursor.execute("SELECT contact_time FROM people WHERE guid = %s", (guid,))
     res = cursor.fetchone()
     if res is None:
-        # TODO: remove me
-        return None
         print("Getting the contact time for ", guid)
         timeline = church_client.get_person_timeline(guid)
         referral_time = 0

@@ -90,15 +90,16 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
 
 def main():
     print("Good morning")
-    # chirch.ChurchClient().login()
+    chirch.ChurchClient().login()
     holly_client = holly.HollyClient()
+    score = competition.get_score()
 
     # Iterate over all the zones
     for zone in dashboard.Zone:
         print(zone)
         res_message = f"{choice(pound_statics.morning)}\n\n"
         res_message += choice(pound_statics.score_intro) + "\n"
-        res_message += competition.get_score()
+        res_message += score
         res_message += "\n\n"
         report = generate_report(zone)
         if report:
@@ -109,8 +110,8 @@ def main():
         res_message += "\n"
         res_message += choice(pound_statics.outro)
 
-        holly_client.send(holly.HollyMessage(res_message, "7016741568410945"))
-        raise "asdf"
+        chat = pound_statics.messenger_ids.get(zone)
+        holly_client.send(holly.HollyMessage(res_message, chat))
 
 
 if __name__ == "__main__":
