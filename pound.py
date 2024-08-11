@@ -2,14 +2,19 @@
 Elder Coxson is done playing
 """
 
-import chirch
-import dashboard
 import datetime
 import json
-
 from os import listdir
 from os.path import isfile, join
-from typing import Union
+from random import choice
+from typing import Optional, Union
+
+import holly
+
+import chirch
+import competition
+import dashboard
+import pound_statics
 
 
 def load_today_report() -> Union[dict[str, dict[str, list[str]]], None]:
@@ -27,11 +32,8 @@ def load_today_report() -> Union[dict[str, dict[str, list[str]]], None]:
     return None
 
 
-def generate_report(zone: dashboard.Zone):
+def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     """Generates a report of uncontacted referrals"""
-    # Get which zones we're trying out
-    requested_zones = [zone]
-
     zones = load_today_report()
 
     if zones is None:
@@ -69,23 +71,47 @@ def generate_report(zone: dashboard.Zone):
             open(f"reports/{now}.json", "w", encoding="utf-8"),
             indent=4,
         )
-        zones = json.loads(json.dumps({"zones": zones}))[
-            "zones"]  # lazy I know
+        zones = json.loads(json.dumps(zones))  # lazy I know
 
-    for requested_zone in requested_zones:
-        zone = zones.get(str(requested_zone.value))
-        if zone is None:
+    zone = zones.get(str(requested_zone.value))
+    if zone is None:
         print(zone)
-        if zone:
-            message = f"{requested_zone.name.replace('_', ' ').capitalize()}\n"
-            for area, names in zone.items():
-                message += f"- {area}: \n"
-                for name in names:
-                    message += f"  - {name}\n"
-                message += "\n"
-            print(message)
-            s.send(
-                json.dumps(
-                    {"content": message, "chat_id": chat_id, "sender": ""}
-                ).encode("utf-8")
-            )
+        return "NO UNCONTACTED REFERRALS!!11!"
+    if zone:
+        message = ""
+        for area, names in zone.items():
+            message += f"- {area}: \n"
+            for name in names:
+                message += f"  - {name}\n"
+            message += "\n"
+        print(message)
+        return message
+
+
+def main():
+    print("Good morning")
+    # chirch.ChurchClient().login()
+    holly_client = holly.HollyClient()
+
+    # Iterate over all the zones
+    for zone in dashboard.Zone:
+        print(zone)
+        res_message = f"{choice(pound_statics.morning)}\n\n"
+        res_message += choice(pound_statics.score_intro) + "\n"
+        res_message += competition.get_score()
+        res_message += "\n\n"
+        report = generate_report(zone)
+        if report:
+            res_message += choice(pound_statics.referrals) + "\n"
+            res_message += report
+        else:
+            res_message += "I couldn't fetch the referrals this morning...\n"
+        res_message += "\n"
+        res_message += choice(pound_statics.outro)
+
+        holly_client.send(holly.HollyMessage(res_message, "7016741568410945"))
+        raise "asdf"
+
+
+if __name__ == "__main__":
+    main()
