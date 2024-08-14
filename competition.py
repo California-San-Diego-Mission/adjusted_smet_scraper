@@ -3,7 +3,6 @@
 
 import datetime
 import os
-import random
 import statistics
 import time
 from dataclasses import dataclass, field
@@ -36,9 +35,6 @@ def handle_request(request: holly.ParsedHollyMessage):
 
 @dataclass
 class ZoneResults:
-    successful: int = 0
-    attempted: int = 0
-    total: int = 0
     contact_time: list[float] = field(default_factory=list)
 
 
@@ -57,13 +53,13 @@ def get_score():
         persons = client.get_cached_people_list()["persons"]
 
         # get the last transfer
-        last_transfer = datetime.datetime.fromtimestamp(1720033200)
+        last_transfer = datetime.datetime.fromtimestamp(1723642200)
 
-        zones: dict[dashboard.Zone, ZoneResults] = {}
+        zones: dict[dashboard.Zone, list[float]] = {}
+        total = 0
+        successful = 0
+        attempted = 0
 
-        total_referrals = 0
-        total_successful = 0
-        total_attempted = 0
         for person in persons:
             assigned_date = person.get("referralAssignedDate")
             if assigned_date is None:
@@ -86,7 +82,7 @@ def get_score():
 
                 # If the zone doesn't exist, insert it
                 if zones.get(zone) is None:
-                    zones[zone] = ZoneResults()
+                    zones[zone] = []
 
                 status_id = person.get("referralStatusId")
                 if status_id is None:
@@ -102,78 +98,35 @@ def get_score():
                     status == dashboard.ReferralStatus.NOT_SUCCESSFUL
                     or status == dashboard.ReferralStatus.SUCCESSFUL
                 ):
+                    attempted += 1
                     contact_time = get_contact_time(
                         person.get("personGuid"), cursor, client
                     )
                     if contact_time is not None:
                         mydb.commit()
-                        zones[zone].contact_time.append(contact_time)
+                        zones[zone].append(contact_time)
 
-                if status == dashboard.ReferralStatus.NOT_ATTEMPTED:
-                    zones[zone].total += 1
-                    total_referrals += 1
-                elif status == dashboard.ReferralStatus.NOT_SUCCESSFUL:
-                    zones[zone].attempted += 1
-                    zones[zone].total += 1
-                    total_referrals += 1
-                    total_attempted += 1
-                elif status == dashboard.ReferralStatus.SUCCESSFUL:
-                    zones[zone].successful += 1
-                    zones[zone].total += 1
-                    total_referrals += 1
-                    total_attempted += 1
-                    total_successful += 1
+                total += 1
+                if status == dashboard.ReferralStatus.SUCCESSFUL:
+                    successful += 1
+
             except Exception as e:
                 print(f"Error processing person: {e}")
                 continue
 
-        zone_percentages = {}
-        for zone, zone_items in zones.items():
-            time_average = statistics.median(zone_items.contact_time)
-            if zone_items.total != 0:
-                print(
-                    f"{zone.name} - S:{zone_items.successful} A:{zone_items.attempted} T:{zone_items.total} M:{time_average}"
-                )
-                zone_percentages[zone] = (
-                    (
-                        (zone_items.successful + (zone_items.attempted * 0.5))
-                        / zone_items.total
-                    )
-                    * 1000
-                ) - time_average
-
-        # Rank the zones
-        ranked = sorted(zone_percentages.items(),
-                        key=lambda x: x[1], reverse=True)
+        zones = {k: v for (k, v) in zones.items() if len(v) > 0}
+        ranked = sorted(zones.items(), key=lambda x: statistics.mean(x[1]))
 
         # Create the string
-        res = "the current winners of my dog bowl. are the following hooomans:\n\n"
+        res = ""
 
-        if len(ranked) > 0:
-            first = ranked.pop(0)
-            res += f"furst:  {first[0].name.replace('_', ' ').capitalize()} with {round(first[1])} treats\n"
-        if len(ranked) > 0:
-            second = ranked.pop(0)
-            res += f"second: {second[0].name.replace('_', ' ').capitalize()} with {round(second[1])} treats\n"
-        if len(ranked) > 0:
-            third = ranked.pop(0)
-            res += f"third: {third[0].name.replace('_', ' ').capitalize()} with {round(third[1])} treats\n"
-
-        res += "\n"
-        for zone, percentage in ranked:
-            percent_str = round(percentage)
+        for zone, times in ranked:
+            percent_str = round(statistics.mean(times))
             zone_name = zone.name.replace("_", " ").capitalize()
-            res += f"{zone_name}: {percent_str}\n"
-
-        res += f"\nthis transfer we have received {total_referrals} referrals. of which {total_attempted} were attempted. and {total_successful} were successful! so many new people to meet!\n"
-
-        funny = [
-            "my tail might wag off",
-            "I hope they like fetch",
-            "I want to jump on them all",
-            "i will be friends with all of them",
-        ]
-        res += random.choice(funny)
+            res += f"{zone_name}: {percent_str} mins\n"
+        res += f"\nSuccessful: {successful}"
+        res += f"\nAttempted: {attempted}"
+        res += f"\nTotal: {total}"
 
         return res
     except Exception as e:
