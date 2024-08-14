@@ -56,6 +56,9 @@ def get_score():
         last_transfer = datetime.datetime.fromtimestamp(1723642200)
 
         zones: dict[dashboard.Zone, list[float]] = {}
+        total = 0
+        successful = 0
+        attempted = 0
 
         for person in persons:
             assigned_date = person.get("referralAssignedDate")
@@ -65,13 +68,15 @@ def get_score():
                     person.get("personGuid"),
                 )
                 continue
-            assigned_date = datetime.datetime.fromtimestamp(assigned_date / 1000)
+            assigned_date = datetime.datetime.fromtimestamp(
+                assigned_date / 1000)
             if assigned_date < last_transfer:
                 continue
             try:
                 zone_id = person.get("zoneId")
                 if zone_id is None:
-                    print("Person does not have a zoneId", person.get("personGuid"))
+                    print("Person does not have a zoneId",
+                          person.get("personGuid"))
                     continue
                 zone = dashboard.Zone(zone_id)
 
@@ -93,6 +98,7 @@ def get_score():
                     status == dashboard.ReferralStatus.NOT_SUCCESSFUL
                     or status == dashboard.ReferralStatus.SUCCESSFUL
                 ):
+                    attempted += 1
                     contact_time = get_contact_time(
                         person.get("personGuid"), cursor, client
                     )
@@ -100,10 +106,15 @@ def get_score():
                         mydb.commit()
                         zones[zone].append(contact_time)
 
+                total += 1
+                if status == dashboard.ReferralStatus.SUCCESSFUL:
+                    successful += 1
+
             except Exception as e:
                 print(f"Error processing person: {e}")
                 continue
 
+        zones = {k: v for (k, v) in zones.items() if len(v) > 0}
         ranked = sorted(zones.items(), key=lambda x: statistics.mean(x[1]))
 
         # Create the string
@@ -113,6 +124,9 @@ def get_score():
             percent_str = round(statistics.mean(times))
             zone_name = zone.name.replace("_", " ").capitalize()
             res += f"{zone_name}: {percent_str} mins\n"
+        res += f"\nSuccessful: {successful}"
+        res += f"\nAttempted: {attempted}"
+        res += f"\nTotal: {total}"
 
         return res
     except Exception as e:
@@ -176,7 +190,8 @@ def adjust_epoch_time(epoch_time):
         next_day = dt
         if dt.hour > 10:  # doesn't have to be 10, just a number that checks if AM/PM
             next_day = dt + datetime.timedelta(days=1)
-        adjusted_time = next_day.replace(hour=6, minute=30, second=0, microsecond=0)
+        adjusted_time = next_day.replace(
+            hour=6, minute=30, second=0, microsecond=0)
         return adjusted_time
 
 
