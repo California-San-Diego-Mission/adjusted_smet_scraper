@@ -4,7 +4,7 @@
 from datetime import datetime, timedelta
 import chirch
 
-PERSON_PAGE = "https://referralmanager.churchofjesuschrist.org/person/"
+PERSON_PAGE = 'https://referralmanager.churchofjesuschrist.org/person/'
 
 client = chirch.ChurchClient()
 persons = client.get_cached_people_list()['persons']
@@ -16,26 +16,27 @@ yellow = []
 green = []
 
 for item in persons:
-    assigned_date = item["createDate"]
+    assigned_date = item['createDate']
     if assigned_date is None:
         continue
-    referral_assigned_date = datetime.fromtimestamp(
-        assigned_date / 1000)
-    if referral_assigned_date >= start_time and item["referralStatusId"] == 30:
-        if item["offerId"] is None:
+    referral_assigned_date = datetime.fromtimestamp(assigned_date / 1000)
+    if referral_assigned_date >= start_time and item['referralStatusId'] == 30:
+        if item['offerId'] is None:
             continue
-        if item["personStatusId"] == 1:
+        if item['personStatusId'] == 1:
             yellow.append(
-                f"{item['firstName']} - {PERSON_PAGE}{item['personGuid']}")
-        elif item["personStatusId"] > 1 and item["personStatusId"] < 6:
+                f"{item['firstName']} - {PERSON_PAGE}{item['personGuid']}"
+            )
+        elif item['personStatusId'] > 1 and item['personStatusId'] < 6:
             green.append(
-                f"{item['firstName']} - {PERSON_PAGE}{item['personGuid']}")
+                f"{item['firstName']} - {PERSON_PAGE}{item['personGuid']}"
+            )
 
 # Print results
-print(f"--- Green: {len(green)} ---")
+print(f'--- Green: {len(green)} ---')
 for item in green:
     print(item)
 
-print(f"--- Yellow: {len(yellow)} ---")
+print(f'--- Yellow: {len(yellow)} ---')
 for item in yellow:
     print(item)

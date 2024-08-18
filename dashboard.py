@@ -7,28 +7,31 @@ from enum import Enum
 
 class FbPageId(Enum):
     """SLC's ID for each page"""
-    ENGLISH = "2994"
-    IMPERIAL_VALLEY = "3446"
-    SPANISH = "3447"
-    ARABIC = "5573"
-    MANDARIN = "6613"
-    SWAHILI = "6633"
-    HAITIAN = "6634"
-    FARCI = "6653"
-    TAGALOG = "6654"
-    ASL = "6735"
+
+    ENGLISH = '2994'
+    IMPERIAL_VALLEY = '3446'
+    SPANISH = '3447'
+    ARABIC = '5573'
+    MANDARIN = '6613'
+    SWAHILI = '6633'
+    HAITIAN = '6634'
+    FARCI = '6653'
+    TAGALOG = '6654'
+    ASL = '6735'
 
 
 class ClaimedStatus(Enum):
     """Status of claimed interactions from the dashboard JSON"""
-    NOT_CONTACTED = "0"
-    NO_RESPONSE = "1"
-    POSITIVE_RESPONSE = "2"
-    NEGATIVE_RESPONSE = "3"
+
+    NOT_CONTACTED = '0'
+    NO_RESPONSE = '1'
+    POSITIVE_RESPONSE = '2'
+    NEGATIVE_RESPONSE = '3'
 
 
 class Zone(int, Enum):
     """Each of the mission zones"""
+
     ZONE_1 = 500271388
     ZONE_2 = 500350997
     ZONE_3 = 457719924
@@ -41,6 +44,7 @@ class Zone(int, Enum):
 
 class ReferralStatus(Enum):
     """The status a referral can be in"""
+
     NOT_ATTEMPTED = 10
     NOT_SUCCESSFUL = 20
     SUCCESSFUL = 30
@@ -48,6 +52,7 @@ class ReferralStatus(Enum):
 
 class PersonStatus(Enum):
     """The status of a person"""
+
     YELLOW = 1
     GREEN = 2
     BETTER_GREEN = 3
@@ -77,34 +82,34 @@ def parse_dashboard_json(json_data):
         page_data = json_data.get(page_id)
 
         page_results = {
-            "missed": 0,
-            "received": 0,
-            "dots": 0,
+            'missed': 0,
+            'received': 0,
+            'dots': 0,
         }
 
         if page_data:
             # Get the names
-            user_dict = page_data.get("cmisIdToName")
+            user_dict = page_data.get('cmisIdToName')
             if not user_dict:
-                print("Uh oh no user dictionary for page ", page_id)
+                print('Uh oh no user dictionary for page ', page_id)
                 continue
             for _, name in user_dict.items():
                 # Add to user_results if not exist
                 if name not in user_results:
                     user_results[name] = {
-                        "messaging": {
+                        'messaging': {
                             ClaimedStatus.NOT_CONTACTED.value: 0,
                             ClaimedStatus.NO_RESPONSE.value: 0,
                             ClaimedStatus.POSITIVE_RESPONSE.value: 0,
-                            ClaimedStatus.NEGATIVE_RESPONSE.value: 0
+                            ClaimedStatus.NEGATIVE_RESPONSE.value: 0,
                         },
-                        "responses":  {
+                        'responses': {
                             ClaimedStatus.NOT_CONTACTED.value: 0,
                             ClaimedStatus.NO_RESPONSE.value: 0,
                             ClaimedStatus.POSITIVE_RESPONSE.value: 0,
-                            ClaimedStatus.NEGATIVE_RESPONSE.value: 0
+                            ClaimedStatus.NEGATIVE_RESPONSE.value: 0,
                         },
-                        "dots": 0
+                        'dots': 0,
                     }
 
             # Get the messaging stats
@@ -117,7 +122,9 @@ def parse_dashboard_json(json_data):
                     user_results[name]['messaging'][key] += val
 
             # Get the responses stats
-            for uid, value in page_data.get('responsesClaimedByStatus').items():
+            for uid, value in page_data.get(
+                'responsesClaimedByStatus'
+            ).items():
                 name = user_dict.get(uid)
                 if not name:
                     print('Somehow the id to name wasnt included')
@@ -141,17 +148,17 @@ def parse_dashboard_json(json_data):
             missed_dict = page_data.get('missedByDate')
             today_missed_dict = missed_dict.get(today_str)
             if today_missed_dict:
-                page_results["missed"] = today_missed_dict['total']
+                page_results['missed'] = today_missed_dict['total']
 
             # Received interactions
             received_dict = page_data.get('receivedByDate')
             today_received_dict = received_dict.get(today_str)
             if today_received_dict:
-                page_results["received"] = today_received_dict['total']
+                page_results['received'] = today_received_dict['total']
 
             overview_results[page_id] = page_results
         else:
-            print("Uh oh no data for ", page.name)
+            print('Uh oh no data for ', page.name)
     return {'user': user_results, 'overview': overview_results}
 
 

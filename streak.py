@@ -26,7 +26,7 @@ def midnight_handler():
         res = client.get_referral_dashboard_counts()
         res = dashboard.parse_dashboard_json(res)
 
-        for name, data in res["user"]:
+        for name, data in res['user']:
             # Try to get the row from the database
             conn = sqlite3.connect('smet.db')
             c = conn.cursor()
@@ -38,9 +38,9 @@ def midnight_handler():
             if not row:
                 conn = sqlite3.connect('smet.db')
                 c = conn.cursor()
-                c.execute('INSERT INTO smet (CHURCH_ID, FB_NAME) VALUES (?, ?)',
-
-                          )
+                c.execute(
+                    'INSERT INTO smet (CHURCH_ID, FB_NAME) VALUES (?, ?)',
+                )
 
         time.sleep(60 * 60 * 2)
 
@@ -69,7 +69,7 @@ def calculate_smet():
 
 
 def main():
-    print("Running SMET")
+    print('Running SMET')
 
     # Start another thread to wait until 23:00
     wait_thread = Thread(target=midnight_handler)
@@ -86,15 +86,18 @@ def main():
                 print(raw_msg)
                 ret = handle_request(raw_msg.parse(parser))
                 if ret:
-                    client.send(holly.HollyMessage(
-                        content=ret, chat_id=raw_msg.chat_id, sender=''))
+                    client.send(
+                        holly.HollyMessage(
+                            content=ret, chat_id=raw_msg.chat_id, sender=''
+                        )
+                    )
 
         except holly.HollyError as e:
-            print(f"Error: {e}")
+            print(f'Error: {e}')
 
         print('Disconnected from Holly socket')
         time.sleep(30)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

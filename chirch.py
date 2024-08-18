@@ -30,45 +30,45 @@ class ChurchClient:
         # Read the dotenv file
         dotenv.load_dotenv()
 
-        self.username = os.getenv("CHURCH_USERNAME")
-        self.password = os.getenv("CHURCH_PASSWORD")
+        self.username = os.getenv('CHURCH_USERNAME')
+        self.password = os.getenv('CHURCH_PASSWORD')
         try:
-            with open("session.json", "x") as file:
-                file.write("{}")
+            with open('session.json', 'x') as file:
+                file.write('{}')
         except FileExistsError:
-            print("Session exists")
+            print('Session exists')
 
-        with open("session.json", "r", encoding="utf-8") as file:
+        with open('session.json', 'r', encoding='utf-8') as file:
             # Read to json
             session_data = json.load(file)
 
             # Determine if we have state, client_id, or stateToken
-            self.nonce = session_data.get("nonce")
-            self.state = session_data.get("state")
-            self.client_id = session_data.get("client_id")
-            self.state_token = session_data.get("stateToken")
-            self.bearer = session_data.get("bearer")
+            self.nonce = session_data.get('nonce')
+            self.state = session_data.get('state')
+            self.client_id = session_data.get('client_id')
+            self.state_token = session_data.get('stateToken')
+            self.bearer = session_data.get('bearer')
 
             # Import cookies
-            cookies = session_data.get("cookies")
+            cookies = session_data.get('cookies')
             if cookies:
-                self.client.cookies.update(session_data["cookies"])
+                self.client.cookies.update(session_data['cookies'])
 
     def __format__(self, __format_spec: str) -> str:
-        return f"{self.username}:{self.password}\n State: {self.state} Client ID: {self.client_id} State Token: {self.state_token}"
+        return f'{self.username}:{self.password}\n State: {self.state} Client ID: {self.client_id} State Token: {self.state_token}'
 
     def save(self):
         """Save the state of the client to a file"""
-        with open("session.json", "w", encoding="utf-8") as file:
+        with open('session.json', 'w', encoding='utf-8') as file:
             # Write to json
             json.dump(
                 {
-                    "nonce": self.nonce,
-                    "state": self.state,
-                    "client_id": self.client_id,
-                    "stateToken": self.state_token,
-                    "cookies": dict(self.client.cookies),
-                    "bearer": self.bearer,
+                    'nonce': self.nonce,
+                    'state': self.state,
+                    'client_id': self.client_id,
+                    'stateToken': self.state_token,
+                    'cookies': dict(self.client.cookies),
+                    'bearer': self.bearer,
                 },
                 file,
                 indent=4,
@@ -80,59 +80,66 @@ class ChurchClient:
         self.client.cookies.clear()
 
         # Set user-agent
-        self.client.headers["User-Agent"] = (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36"
+        self.client.headers['User-Agent'] = (
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.82 Safari/537.36'
         )
 
         # Get redirect URL from login page, then extract the state token
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org")
+            'https://referralmanager.churchofjesuschrist.org'
+        )
         if res.status_code != 200:
             raise ChurchHttpError
 
         # Extract the JSON embedded in the HTML
         json_data = res.text.split('"stateToken":"')[1].split('",')[0]
         # Decode the nasty stuff the church does to JSON in HTML
-        self.state_token = json_data.encode().decode("unicode-escape")
+        self.state_token = json_data.encode().decode('unicode-escape')
 
         print(self.state_token)
 
         # Get the state handle
         res = self.client.post(
-            "https://id.churchofjesuschrist.org/idp/idx/introspect",
-            data=json.dumps({"stateToken": self.state_token}),
-            headers={"Content-Type": "application/json",
-                     "Accept": "application/json"},
+            'https://id.churchofjesuschrist.org/idp/idx/introspect',
+            data=json.dumps({'stateToken': self.state_token}),
+            headers={
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
         )
-        self.state_token = res.json()["stateHandle"]
+        self.state_token = res.json()['stateHandle']
 
         # Send the username with the stateToken
         res = self.client.post(
-            "https://id.churchofjesuschrist.org/idp/idx/identify",
+            'https://id.churchofjesuschrist.org/idp/idx/identify',
             data=json.dumps(
-                {"stateHandle": self.state_token, "identifier": self.username}
+                {'stateHandle': self.state_token, 'identifier': self.username}
             ),
-            headers={"Content-Type": "application/json",
-                     "Accept": "application/json"},
+            headers={
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
         )
         if not res.status_code == 200:
             print(res)
             print(res.text)
             raise ChurchInvalidCreds
         res = res.json()
-        self.state_token = res["stateHandle"]
+        self.state_token = res['stateHandle']
 
         # Send the password with the stateToken
         res = self.client.post(
-            "https://id.churchofjesuschrist.org/idp/idx/challenge/answer",
+            'https://id.churchofjesuschrist.org/idp/idx/challenge/answer',
             data=json.dumps(
                 {
-                    "stateHandle": self.state_token,
-                    "credentials": {"passcode": self.password},
+                    'stateHandle': self.state_token,
+                    'credentials': {'passcode': self.password},
                 }
             ),
-            headers={"Content-Type": "application/json",
-                     "Accept": "application/json"},
+            headers={
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
         )
         if not res.status_code == 200:
             print(res)
@@ -141,20 +148,21 @@ class ChurchClient:
 
         # Set the auth cookies
         res = self.client.get(
-            res.json()["success"]["href"], allow_redirects=False)
+            res.json()['success']['href'], allow_redirects=False
+        )
 
         # Get the redirect URL from res
-        res = self.client.get(res.headers["Location"], allow_redirects=False)
+        res = self.client.get(res.headers['Location'], allow_redirects=False)
 
         # Get the bearer token
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/auth",
+            'https://referralmanager.churchofjesuschrist.org/services/auth',
             headers={
-                "Accept": "application/json, text/plain, */*",
-                "Authorization": "",
+                'Accept': 'application/json, text/plain, */*',
+                'Authorization': '',
             },
         )
-        self.bearer = res.json()["token"]
+        self.bearer = res.json()['token']
 
         # Save the state for future launches
         self.save()
@@ -162,21 +170,21 @@ class ChurchClient:
     def get_referral_dashboard_counts(self):
         """Get the dashboard counts from referral manager"""
         headers = {
-            "Referer": "https://referralmanager.churchofjesuschrist.org/dashboard/(right-sidebar:tasks)",
-            "Authorization": f"Bearer {self.bearer}",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "en",
-            "Time-Zone": "America/Los_Angeles",
+            'Referer': 'https://referralmanager.churchofjesuschrist.org/dashboard/(right-sidebar:tasks)',
+            'Authorization': f'Bearer {self.bearer}',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en',
+            'Time-Zone': 'America/Los_Angeles',
         }
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts",
+            'https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts',
             headers=headers,
         )
         if res.status_code == 500:
-            print("Cookies are invalid, logging in")
+            print('Cookies are invalid, logging in')
             self.login()
             res = self.client.get(
-                "https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts",
+                'https://referralmanager.churchofjesuschrist.org/services/facebook/dashboardCounts',
                 headers=headers,
             )
         if res.status_code != 200:
@@ -191,14 +199,14 @@ class ChurchClient:
     def get_people_list(self, recurse=False):
         """Gets the list of everyone from the referral manager. This is a HUGE request at roughly 8mb. Smh the church is bad"""
         res = self.client.get(
-            "https://referralmanager.churchofjesuschrist.org/services/people/mission/14289?includeDroppedPersons=true",
-            headers={"Authorization": f"Bearer {self.bearer}"},
+            'https://referralmanager.churchofjesuschrist.org/services/people/mission/14289?includeDroppedPersons=true',
+            headers={'Authorization': f'Bearer {self.bearer}'},
         )
         if res.status_code == 500:
             if recurse:
                 raise ChurchHttpError
             else:
-                print("Cookies are invalid, logging in")
+                print('Cookies are invalid, logging in')
                 self.login()
                 return self.get_people_list(recurse=True)
         if res.status_code != 200:
@@ -211,18 +219,18 @@ class ChurchClient:
             if recurse:
                 raise ChurchParseError from e
             else:
-                print("Cookies might be invalid, logging in")
+                print('Cookies might be invalid, logging in')
                 self.login()
                 return self.get_people_list(recurse=True)
 
     def get_cached_people_list(self):
         """Pulls the people list from the cache if available, or fetches new if none"""
         # Check if the people folder exists
-        if not os.path.exists("people"):
-            os.mkdir("people")
+        if not os.path.exists('people'):
+            os.mkdir('people')
 
         # Lists are saved as <timestamp>.json
-        files = os.listdir("people")
+        files = os.listdir('people')
         if len(files) == 0:
             # No files, fetch new
             pl = self.get_people_list()
@@ -234,17 +242,19 @@ class ChurchClient:
         file = files[0]
 
         # Get the timestamp
-        timestamp = int(file.split(".")[0])
+        timestamp = int(file.split('.')[0])
 
         # Check if the file is older than 2 hours
-        if datetime.now() - datetime.fromtimestamp(timestamp) > timedelta(hours=2):
+        if datetime.now() - datetime.fromtimestamp(timestamp) > timedelta(
+            hours=2
+        ):
             # File is older than 1 hour, fetch new
             pl = self.get_people_list()
             self.cache_people_list(pl)
             return pl
 
         # Load the file
-        with open(f"people/{file}", "r", encoding="utf-8") as file:
+        with open(f'people/{file}', 'r', encoding='utf-8') as file:
             return json.load(file)
 
     def cache_people_list(self, people_list):
@@ -253,13 +263,13 @@ class ChurchClient:
         timestamp = int(datetime.now().timestamp())
 
         # Save the file
-        with open(f"people/{timestamp}.json", "w", encoding="utf-8") as file:
+        with open(f'people/{timestamp}.json', 'w', encoding='utf-8') as file:
             json.dump(people_list, file, indent=4)
 
     def get_person_timeline(self, person_guid):
         """Gets the details for a single person from the referral manager"""
         res = self.client.get(
-            f"https://referralmanager.churchofjesuschrist.org/services/progress/timeline/{person_guid}"
+            f'https://referralmanager.churchofjesuschrist.org/services/progress/timeline/{person_guid}'
         )
         if res.status_code != 200:
             print(res)
@@ -273,53 +283,53 @@ class ChurchClient:
     def parse_person(self, person):
         """Get all the critical information from the person"""
         res = {}
-        res["guid"] = person["personGuid"]
-        res["first_name"] = person["firstName"]
-        res["last_name"] = person["lastName"]
-        res["area_name"] = person["areaName"]
+        res['guid'] = person['personGuid']
+        res['first_name'] = person['firstName']
+        res['last_name'] = person['lastName']
+        res['area_name'] = person['areaName']
 
-        status = person["referralStatusId"]
+        status = person['referralStatusId']
         if status is None:
             # This means the referral was canceled
             return None
-        res["referral_status"] = dashboard.ReferralStatus(status)
-        if res["referral_status"] == dashboard.ReferralStatus.SUCCESSFUL:
+        res['referral_status'] = dashboard.ReferralStatus(status)
+        if res['referral_status'] == dashboard.ReferralStatus.SUCCESSFUL:
             return None
 
-        assigned_date = person["referralAssignedDate"]
+        assigned_date = person['referralAssignedDate']
         assigned_date = datetime.fromtimestamp(assigned_date / 1000)
         # If it's less than 48 hours, no need
         if assigned_date > datetime.now() - timedelta(hours=48):
             return None
 
         # Ignore referrals from the MCRD since they can only be contacted on Sunday
-        if "Marine Corps" in person["orgName"]:
+        if 'Marine Corps' in person['orgName']:
             return None
         # MCRD referral names can also end with (Fox), (Bravo)
-        first_name = person["firstName"]
+        first_name = person['firstName']
         if first_name:
             first_name = first_name.lower()
-            if "(fox)" in first_name or "(bravo)" in first_name:
+            if '(fox)' in first_name or '(bravo)' in first_name:
                 return None
 
-        zone = person["zoneId"]
+        zone = person['zoneId']
         if zone is None:
             # If the referral is marked as a member, there will be no teaching area/zone etc
             return None
         try:
-            res["zone"] = dashboard.Zone(zone)
+            res['zone'] = dashboard.Zone(zone)
         except:
-            print(f"Zone {zone} not found")
+            print(f'Zone {zone} not found')
             return None
 
-        status = person["personStatusId"]
+        status = person['personStatusId']
         try:
-            res["status"] = dashboard.PersonStatus(status)
+            res['status'] = dashboard.PersonStatus(status)
         except:
-            print(f"Person status {status} not found")
+            print(f'Person status {status} not found')
 
         grey_dot = False
-        match res["status"]:
+        match res['status']:
             case dashboard.PersonStatus.MEMBER:
                 return None
             case dashboard.PersonStatus.NEW_MEMBER:
@@ -343,9 +353,9 @@ class ChurchClient:
             case dashboard.PersonStatus.NOT_RECENTLY_CONTACTED:
                 return res
 
-        if res["referral_status"] == dashboard.ReferralStatus.NOT_SUCCESSFUL:
-            guid = person["personGuid"]
-            print(f"Fetching timeline for {guid}")
+        if res['referral_status'] == dashboard.ReferralStatus.NOT_SUCCESSFUL:
+            guid = person['personGuid']
+            print(f'Fetching timeline for {guid}')
             timeline = self.get_person_timeline(guid)
             if dashboard.parse_timeline(timeline, grey_dot) is False:
                 return None

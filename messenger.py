@@ -1,4 +1,4 @@
-#pylint: disable=line-too-long
+# pylint: disable=line-too-long
 """Selenium client for interacting with Facebook messenger"""
 
 import json
@@ -12,38 +12,47 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
-DROPIN_URL = "https://www.messenger.com/t/7570004799678379"
+DROPIN_URL = 'https://www.messenger.com/t/7570004799678379'
 
-class MessengerClient():
+
+class MessengerClient:
     """Client to send messages via messenger, using Selenium"""
+
     def __init__(self):
         load_dotenv()
 
         option = Options()
-        option.add_argument("--disable-infobars")
-        option.add_argument("start-maximized")
-        option.add_argument("--disable-extensions")
-        option.add_argument("--headless")
-        option.add_argument("headless")
-        option.add_argument("--window-size=1920,1080")
-        option.add_argument("--disable-gpu")
+        option.add_argument('--disable-infobars')
+        option.add_argument('start-maximized')
+        option.add_argument('--disable-extensions')
+        option.add_argument('--headless')
+        option.add_argument('headless')
+        option.add_argument('--window-size=1920,1080')
+        option.add_argument('--disable-gpu')
         option.add_argument(
-            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
+            'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
+        )
 
         self.browser = webdriver.Firefox(options=option)
-        self.email = getenv("FACEBOOK_EMAIL")
-        self.password = getenv("FACEBOOK_PASSWORD")
+        self.email = getenv('FACEBOOK_EMAIL')
+        self.password = getenv('FACEBOOK_PASSWORD')
 
     def login(self):
         """
         Logs into Facebook and Messenger, resetting cookies
         """
-        self.browser.get("https://messenger.com/")
+        self.browser.get('https://messenger.com/')
 
         # Wait for the email and pass inputs to load
-        email_input = WebDriverWait(self.browser, 10).until(EC.element_to_be_clickable((By.ID, 'email')))
-        password_input = WebDriverWait(self.browser, 10).until(EC.presence_of_element_located((By.ID, 'pass')))
-        login_button = WebDriverWait(self.browser, 10).until(EC.presence_of_element_located((By.ID, 'loginbutton')))
+        email_input = WebDriverWait(self.browser, 10).until(
+            EC.element_to_be_clickable((By.ID, 'email'))
+        )
+        password_input = WebDriverWait(self.browser, 10).until(
+            EC.presence_of_element_located((By.ID, 'pass'))
+        )
+        login_button = WebDriverWait(self.browser, 10).until(
+            EC.presence_of_element_located((By.ID, 'loginbutton'))
+        )
         self.screenshot()
 
         email_input.send_keys(self.email)
@@ -82,15 +91,17 @@ class MessengerClient():
         # Make sure the URL is correct
         if self.browser.current_url != DROPIN_URL:
             self.browser.get(DROPIN_URL)
-            print("Navigated to dropin URL, sleeping now...")
+            print('Navigated to dropin URL, sleeping now...')
             time.sleep(10)
 
-
         # Get the bar
-        chat_bar = self.browser.find_element(By.XPATH, '//div[contains(@class, "xzsf02u x1a2a7pz x1n2onr6 x14wi4xw x1iyjqo2 x1gh3ibb xisnujt xeuugli x1odjw0f notranslate")]')
+        chat_bar = self.browser.find_element(
+            By.XPATH,
+            '//div[contains(@class, "xzsf02u x1a2a7pz x1n2onr6 x14wi4xw x1iyjqo2 x1gh3ibb xisnujt xeuugli x1odjw0f notranslate")]',
+        )
 
         # Estimate how long the message will take to send
-        print(f"Message send ETA: {len(message) / 100} seconds")
+        print(f'Message send ETA: {len(message) / 100} seconds')
 
         # Send the keys one at a time
         for char in message:
