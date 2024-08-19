@@ -2,12 +2,14 @@
 """Log into church servers and get data for SMET"""
 
 import json
-import dotenv
-from datetime import timedelta
-from datetime import datetime
 import os
+from datetime import datetime, timedelta
+
+import dotenv
 import requests
+
 import dashboard
+from person import Person, PersonParseException
 
 
 class ChurchInvalidCreds(Exception):
@@ -196,7 +198,7 @@ class ChurchClient:
         except requests.exceptions.JSONDecodeError as e:
             raise ChurchParseError from e
 
-    def get_people_list(self, recurse=False):
+    def get_people_list(self, recurse=False) -> list[Person]:
         """Gets the list of everyone from the referral manager. This is a HUGE request at roughly 8mb. Smh the church is bad"""
         res = self.client.get(
             'https://referralmanager.churchofjesuschrist.org/services/people/mission/14289?includeDroppedPersons=true',
@@ -214,7 +216,16 @@ class ChurchClient:
             raise ChurchHttpError
 
         try:
-            return res.json()
+            res = res.json()
+            persons = res['persons']
+            res = []
+            for p in persons:
+                try:
+                    res.append(Person(p))
+                except PersonParseException as e:
+                    print('Unable to parse person: ', e)
+                    continue
+            return res
         except requests.exceptions.JSONDecodeError as e:
             if recurse:
                 raise ChurchParseError from e
@@ -223,8 +234,9 @@ class ChurchClient:
                 self.login()
                 return self.get_people_list(recurse=True)
 
-    def get_cached_people_list(self):
-        """Pulls the people list from the cache if available, or fetches new if none"""
+    def get_cached_people_list(self) -> list[Person]:
+        """Pulls the people list from the cache if available,
+        or fetches new if none"""
         # Check if the people folder exists
         if not os.path.exists('people'):
             os.mkdir('people')
@@ -255,16 +267,26 @@ class ChurchClient:
 
         # Load the file
         with open(f'people/{file}', 'r', encoding='utf-8') as file:
-            return json.load(file)
+            res = json.load(file)
+            persons = res['persons']
+            res = []
+            for p in persons:
+                try:
+                    res.append(Person(p))
+                except PersonParseException as e:
+                    print('Unable to parse person: ', e)
+                    continue
+            return res
 
-    def cache_people_list(self, people_list):
+    def cache_people_list(self, people_list: list[Person]):
         """Saves the people list to the cache"""
         # Get the current time
         timestamp = int(datetime.now().timestamp())
 
         # Save the file
+        res = {'persons': list(map(lambda x: x.ser(), people_list))}
         with open(f'people/{timestamp}.json', 'w', encoding='utf-8') as file:
-            json.dump(people_list, file, indent=4)
+            json.dump(res, file, indent=4)
 
     def get_person_timeline(self, person_guid):
         """Gets the details for a single person from the referral manager"""
@@ -280,70 +302,39 @@ class ChurchClient:
         except requests.exceptions.JSONDecodeError as e:
             raise ChurchParseError from e
 
-    def parse_person(self, person):
+    def filter_person(self, person: Person) -> bool:
         """Get all the critical information from the person"""
-        res = {}
-        res['guid'] = person['personGuid']
-        res['first_name'] = person['firstName']
-        res['last_name'] = person['lastName']
-        res['area_name'] = person['areaName']
 
-        status = person['referralStatusId']
-        if status is None:
-            # This means the referral was canceled
-            return None
-        res['referral_status'] = dashboard.ReferralStatus(status)
-        if res['referral_status'] == dashboard.ReferralStatus.SUCCESSFUL:
-            return None
+        if person.referral_status == dashboard.ReferralStatus.SUCCESSFUL:
+            return False
 
-        assigned_date = person['referralAssignedDate']
-        assigned_date = datetime.fromtimestamp(assigned_date / 1000)
         # If it's less than 48 hours, no need
-        if assigned_date > datetime.now() - timedelta(hours=48):
-            return None
+        if person.referral_assigned_date > datetime.now() - timedelta(
+            hours=48
+        ):
+            return False
 
-        # Ignore referrals from the MCRD since they can only be contacted on Sunday
-        if 'Marine Corps' in person['orgName']:
-            return None
-        # MCRD referral names can also end with (Fox), (Bravo)
-        first_name = person['firstName']
-        if first_name:
-            first_name = first_name.lower()
-            if '(fox)' in first_name or '(bravo)' in first_name:
-                return None
-
-        zone = person['zoneId']
-        if zone is None:
-            # If the referral is marked as a member, there will be no teaching area/zone etc
-            return None
-        try:
-            res['zone'] = dashboard.Zone(zone)
-        except:
-            print(f'Zone {zone} not found')
-            return None
-
-        status = person['personStatusId']
-        try:
-            res['status'] = dashboard.PersonStatus(status)
-        except:
-            print(f'Person status {status} not found')
+        # Ignore referrals from the MCRD
+        # since they can only be contacted on Sunday
+        if 'Marine Corps' in person.org_name:
+            return False
 
         grey_dot = False
-        match res['status']:
+        match person.status:
             case dashboard.PersonStatus.MEMBER:
-                return None
+                return False
             case dashboard.PersonStatus.NEW_MEMBER:
-                return None
+                return False
             case dashboard.PersonStatus.UNABLE_TO_CONTACT:
-                return None
+                return False
             case dashboard.PersonStatus.MOVED:
-                return None
+                return False
             case dashboard.PersonStatus.OUTSIDE_AREA_STRENGTH:
-                return None
+                return False
             case dashboard.PersonStatus.NOT_INTERESTED_DECLARED:
-                return None
+                return False
             case dashboard.PersonStatus.PRANK:
-                return None
+                return False
             case dashboard.PersonStatus.NOT_INTERESTED:
                 grey_dot = True
             case dashboard.PersonStatus.NOT_PROGRESSING:
@@ -351,13 +342,12 @@ class ChurchClient:
             case dashboard.PersonStatus.TOO_BUSY:
                 grey_dot = True
             case dashboard.PersonStatus.NOT_RECENTLY_CONTACTED:
-                return res
+                return True
 
-        if res['referral_status'] == dashboard.ReferralStatus.NOT_SUCCESSFUL:
-            guid = person['personGuid']
-            print(f'Fetching timeline for {guid}')
-            timeline = self.get_person_timeline(guid)
+        if person.referral_status == dashboard.ReferralStatus.NOT_SUCCESSFUL:
+            print(f'Fetching timeline for {person.guid}')
+            timeline = self.get_person_timeline(person.guid)
             if dashboard.parse_timeline(timeline, grey_dot) is False:
-                return None
+                return False
 
-        return res
+        return True

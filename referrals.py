@@ -7,12 +7,12 @@ import datetime
 import json
 import socket
 import time
-
 from os import listdir
 from os.path import isfile, join
 
 import chirch
 import dashboard
+from person import Person
 
 AUTHORIZED_USERS = ['Williams', 'Broman', 'Coxson']
 
@@ -105,30 +105,27 @@ def generate_report(s: socket.socket, chat_id: str, sender: str):
             ).encode('utf-8')
         )
         client = chirch.ChurchClient()
-        persons = client.get_cached_people_list()['persons']
-        troubled = []
+        persons = client.get_cached_people_list()
+        troubled: list[Person] = []
         for p in persons:
-            res = client.parse_person(p)
-            if res is None:
+            res = client.filter_person(p)
+            if res is False:
                 continue
-            if res['status'] != dashboard.ReferralStatus.SUCCESSFUL:
-                troubled.append(res)
+            troubled.append(p)
 
         print(f'{len(troubled)} uncontacted referrals')
 
         zones = {}
         for p in troubled:
-            zone = zones.get(p['zone'])
+            zone = zones.get(p.zone)
             if zone is None:
-                zones[p['zone']] = {}
-                zone = zones[p['zone']]
-            area = zone.get(p['area_name'])
+                zones[p.zone] = {}
+                zone = zones[p.zone]
+            area = zone.get(p.area_name)
             if area is None:
-                zone[p['area_name']] = []
-                area = zone[p['area_name']]
-            if p['last_name'] is None:
-                p['last_name'] = ''
-            area.append(f"{p['first_name']} {p['last_name']}".strip())
+                zone[p.area_name] = []
+                area = zone[p.area_name]
+            area.append(p.first_name.strip())
 
         # Save the zone messages to reports/timestamp.json
         now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
