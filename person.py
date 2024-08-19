@@ -25,7 +25,13 @@ class Person:
     referral_status: ReferralStatus
 
     def __init__(self, obj: dict):
-        self.first_name = obj['firstName'].split(' ')[0]
+        try:
+            self.first_name = obj['firstName'].split(' ')[0]
+            first_name = self.first_name.lower()
+            if '(fox)' in first_name or '(bravo)' in first_name:
+                raise PersonParseException('MCRD')
+        except AttributeError:
+            raise PersonParseException('Person has no first name')
         try:
             self.area_name = obj['areaName']
         except KeyError:

@@ -14,6 +14,7 @@ import holly
 import chirch
 import competition
 import dashboard
+from person import Person
 import pound_statics
 
 
@@ -39,30 +40,28 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     if zones is None:
         print('No report for today, generating a new one')
         client = chirch.ChurchClient()
-        persons = client.get_cached_people_list()['persons']
-        troubled = []
+        persons = client.get_cached_people_list()
+        troubled: list[Person] = []
         for p in persons:
-            res = client.parse_person(p)
-            if res is None:
+            res = client.filter_person(p)
+            if res is False:
+                print('continuing')
                 continue
-            if res['status'] != dashboard.ReferralStatus.SUCCESSFUL:
-                troubled.append(res)
+            troubled.append(p)
 
         print(f'{len(troubled)} uncontacted referrals')
 
         zones = {}
         for p in troubled:
-            zone = zones.get(p['zone'])
+            zone = zones.get(p.zone)
             if zone is None:
-                zones[p['zone']] = {}
-                zone = zones[p['zone']]
-            area = zone.get(p['area_name'])
+                zones[p.zone] = {}
+                zone = zones[p.zone]
+            area = zone.get(p.area_name)
             if area is None:
-                zone[p['area_name']] = []
-                area = zone[p['area_name']]
-            if p['last_name'] is None:
-                p['last_name'] = ''
-            area.append(f"{p['first_name']} {p['last_name']}".strip())
+                zone[p.area_name] = []
+                area = zone[p.area_name]
+            area.append(p.first_name.strip())
 
         # Save the zone messages to reports/timestamp.json
         now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')

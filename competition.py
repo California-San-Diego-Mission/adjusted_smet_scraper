@@ -50,7 +50,7 @@ def get_score():
         cursor = mydb.cursor()
 
         client = chirch.ChurchClient()
-        persons = client.get_cached_people_list()['persons']
+        persons = client.get_cached_people_list()
 
         # get the last transfer
         last_transfer = datetime.datetime.fromtimestamp(1723642200)
@@ -61,40 +61,16 @@ def get_score():
         attempted = 0
 
         for person in persons:
-            assigned_date = person.get('referralAssignedDate')
-            if assigned_date is None:
-                print(
-                    'Person does not have a referralAssignedDate',
-                    person.get('personGuid'),
-                )
-                continue
-            assigned_date = datetime.datetime.fromtimestamp(
-                assigned_date / 1000
-            )
-            if assigned_date < last_transfer:
+            if person.referral_assigned_date < last_transfer:
                 continue
             try:
-                zone_id = person.get('zoneId')
-                if zone_id is None:
-                    print(
-                        'Person does not have a zoneId',
-                        person.get('personGuid'),
-                    )
-                    continue
-                zone = dashboard.Zone(zone_id)
+                zone = person.zone
 
                 # If the zone doesn't exist, insert it
                 if zones.get(zone) is None:
                     zones[zone] = []
 
-                status_id = person.get('referralStatusId')
-                if status_id is None:
-                    print(
-                        "Person doesn't have referralStatusId: ",
-                        person.get('personGuid'),
-                    )
-                    continue
-                status = dashboard.ReferralStatus(status_id)
+                status = person.referral_status
 
                 # Get the time from assignment to contact
                 if (
@@ -103,7 +79,7 @@ def get_score():
                 ):
                     attempted += 1
                     contact_time = get_contact_time(
-                        person.get('personGuid'), cursor, client
+                        person.guid, cursor, client
                     )
                     if contact_time is not None:
                         mydb.commit()
