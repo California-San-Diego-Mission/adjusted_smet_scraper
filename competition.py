@@ -128,6 +128,7 @@ def get_contact_time(guid: str, cursor, church_client) -> Union[float, None]:
             elif (
                 event['timelineItemType'] == 'CONTACT'
                 or event['timelineItemType'] == 'TEACHING'
+                or event['timelineItemType'] == 'STOPPED_TEACHING'
             ):
                 contact_time = int(event['itemDate'] / 1000)
         if referral_time == 0 or contact_time == 0:
