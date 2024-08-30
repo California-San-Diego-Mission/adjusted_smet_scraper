@@ -4,6 +4,7 @@ Class for managing person information from referral manager
 """
 
 from datetime import datetime
+from typing import Optional
 
 from dashboard import PersonStatus, ReferralStatus, Zone
 
@@ -19,6 +20,7 @@ class Person:
     area_name: str
     org_name: str
     referral_assigned_date: datetime
+    offer_id: Optional[str]
     guid: str
     zone: Zone
     status: PersonStatus
@@ -50,6 +52,7 @@ class Person:
             raise PersonParseException(
                 'Supplied assigned date is not right type'
             )
+        self.offer_id = obj.get('offerId')
         self.guid = obj['personGuid']
         try:
             self.zone = Zone(obj.get('zoneId'))
@@ -75,6 +78,7 @@ class Person:
                 self.referral_assigned_date.timestamp()
             )
             * 1000,
+            'offerId': self.offer_id,
             'personGuid': self.guid,
             'zoneId': self.zone.value,
             'personStatusId': self.status.value,
