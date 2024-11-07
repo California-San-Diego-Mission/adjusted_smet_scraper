@@ -53,7 +53,7 @@ def get_score():
         persons = client.get_cached_people_list()
 
         # get the last transfer
-        last_transfer = datetime.datetime.fromtimestamp(1723642200)
+        last_transfer = datetime.datetime.fromtimestamp(1730946600)
 
         zones: dict[dashboard.Zone, list[float]] = {}
         total = 0
