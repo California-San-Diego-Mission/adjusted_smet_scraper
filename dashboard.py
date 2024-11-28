@@ -166,10 +166,12 @@ def parse_timeline(timeline_data, grey_dot=False):
     """
     Goes through the timeline and determines if the person should be on the list
     """
+    print("running parse timeline")
     attempts = 0
     for event in timeline_data:
         match event['timelineItemType']:
             case 'CONTACT':
+                print("there is a contact")
                 # If the contact is more than 48 hours old, return true
                 timestamp = datetime.fromtimestamp(event['itemDate'] / 1000)
                 if timestamp > datetime.now() - timedelta(hours=48):
@@ -179,9 +181,11 @@ def parse_timeline(timeline_data, grey_dot=False):
                 if attempts > 4 and grey_dot:
                     return False
             case 'STOPPED_TEACHING':
+                print("there is a stop teaching")
                 # If the referral was dropped after it was received
                 return False
             case 'NEW_REFERRAL':
+                print("there is a new referral")
                 return True
     # If there's no contacts, return true
     return True

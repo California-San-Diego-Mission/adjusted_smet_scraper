@@ -304,6 +304,7 @@ class ChurchClient:
 
     def filter_person(self, person: Person) -> bool:
         """Get all the critical information from the person"""
+        print("running filter_person")
 
         if person.referral_status == dashboard.ReferralStatus.SUCCESSFUL:
             return False

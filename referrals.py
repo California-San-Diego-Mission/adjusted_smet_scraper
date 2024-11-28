@@ -14,7 +14,7 @@ import chirch
 import dashboard
 from person import Person
 
-AUTHORIZED_USERS = ['Williams', 'Broman', 'Coxson']
+AUTHORIZED_USERS = ['Williams', 'Broman', 'Coxson', 'Davis']
 
 
 def load_today_report():
