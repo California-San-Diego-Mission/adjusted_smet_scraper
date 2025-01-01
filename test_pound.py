@@ -45,6 +45,7 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
         troubled: list[Person] = []
         artificial_iterator = 0 #not to include in the final. For the sake of testing, this will only use the first 2 referrals in the list
         for p in persons:
+            print(p)
             artificial_iterator += 1
             if artificial_iterator > 20:
                 break
@@ -101,6 +102,8 @@ def main():
     # For the sake of testing, only will send to Elder J. Davis
     for zone in dashboard.Zone: 
         print(zone)
+        if zone != dashboard.Zone.ZONE_8:
+            continue
         res_message = f'{choice(pound_statics.morning)}\n\n'
         res_message += choice(pound_statics.score_intro) + '\n'
         res_message += score

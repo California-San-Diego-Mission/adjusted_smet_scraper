@@ -1,0 +1,78 @@
+Zone,Area,Average Contact Time (minutes)
+ZONE_4,SD 1st (1),791.64
+ZONE_4,Clairemont,774.00
+ZONE_4,Colina del Sol (Sp 1),155.75
+ZONE_4,Point Loma,213.67
+ZONE_4,UC,119.75
+ZONE_4,SD 1st (3),63.00
+ZONE_4,Colina del Sol (Sp 2),236.33
+ZONE_4,SD 1st (4),84.90
+ZONE_4,SD 1st (2),820.43
+ZONE_4,Colina del Sol (Sp 3),377.67
+ZONE_4,Pacific Beach,2.00
+ZONE_4,Colina del Sol (Sp 4),6.50
+ZONE_4,La Jolla YSA (2),1419.00
+ZONE_4,La Jolla YSA (1),4.00
+ZONE_5,Harbor (2),1412.86
+ZONE_5,South Bay (Sp 3),398.20
+ZONE_5,Harbor (1),1160.50
+ZONE_5,South Bay (Sp 1),483.89
+ZONE_5,South Bay (Sp 2),835.67
+ZONE_5,B. Vista (Sp 3),965.33
+ZONE_5,Imperial Beach,1366.22
+ZONE_5,Sweetwater (1),23.75
+ZONE_5,CV 1st (1),520.67
+ZONE_5,SDB YSA/MCRD,783.33
+ZONE_5,Sweetwater (2),597.33
+ZONE_5,CV 1st (2),645.00
+ZONE_5,B. Vista (Sp 2),292.00
+ZONE_5,CV 3rd,465.75
+ZONE_5,B. Vista (Sp 1),22.25
+ZONE_5,Otay Lakes,32.00
+ZONE_5,Otay Lakes (2),17.00
+ZONE_1,S Dgto/Encinitas (Sp),64.00
+ZONE_1,Del Mar 2nd (Farsi),262.00
+ZONE_1,La Costa/Rancho Carillo,5.00
+ZONE_1,Carm Vlly 1/Del Mar 1 (Eng),218.00
+ZONE_1,Del Mar 1st/2nd (Eng/Spa),41.00
+ZONE_1,S Dgto/Encinitas (Eng),17.00
+ZONE_1,Carm Vlly 2 (Man),4.00
+ZONE_6,Grossmont,159.25
+ZONE_6,Monte Vista (Sp 2),185.50
+ZONE_6,Tierrasanta,38.00
+ZONE_6,Fairmount/HC/MCRD (1),151.33
+ZONE_6,Monte Vista (Sp 1),1231.50
+ZONE_6,Fairmount (1),6.60
+ZONE_6,Fairmount (3),1.50
+ZONE_6,Del Cerro,976.00
+ZONE_6,SPL/Monte Vista (Sp 3),952.50
+ZONE_6,La Mesa,10.00
+ZONE_6,Fairmount/HC (3),523.33
+ZONE_6,Santee,154.00
+ZONE_6,Fairmount/HC (2),3.00
+ZONE_8,El Centro,123.00
+ZONE_8,Imperial (1) (Sp),655.50
+ZONE_8,Calexico (2) (Sp),35.50
+ZONE_8,Calexico (1) (Sp),74.00
+ZONE_8,Brawley (2),51.50
+ZONE_8,Brawley (1),353.50
+ZONE_8,Imperial (2) (Sp),15.00
+ZONE_3,Poway (Sp 2),346.33
+ZONE_3,Ramona/Julian,205.00
+ZONE_3,Dos Picos (Sp ),14.00
+ZONE_3,Highland Valley,73.00
+ZONE_3,Sabre Springs,618.67
+ZONE_3,Twin Peaks,120.00
+ZONE_3,Poway (Sp 1),197.00
+ZONE_7,El Rey (Sp 3),39.80
+ZONE_7,El Rey (Sp 2),18.50
+ZONE_7,El Rey (HC),275.67
+ZONE_7,Magnolia (2),26.00
+ZONE_7,Magnolia (1),1.00
+ZONE_7,Hillsdale (3) (Ar/Eng),38.00
+ZONE_7,Lakeside,39.67
+ZONE_7,El Rey (Sp 1),43.33
+ZONE_7,Alpine,28.00
+ZONE_7,Hillsdale (2) (Ar),3.00
+ZONE_2,Mira Mesa (Eng),5.50
+ZONE_2,Blck Mtn/RPQ,45.50
