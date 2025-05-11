@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 
 import chirch
 import dashboard
+import transfer_calculator
 
 load_dotenv()
 
@@ -53,8 +54,8 @@ def get_score():
         persons = client.get_cached_people_list()
 
         # get the last transfer
-        last_transfer = datetime.datetime.fromtimestamp(1734566400)
-
+        last_transfer = datetime.datetime.fromtimestamp(transfer_calculator.get_most_recent_transfer_time_stamp())
+        print(last_transfer)
         zones: dict[dashboard.Zone, list[float]] = {}
         total = 0
         successful = 0
