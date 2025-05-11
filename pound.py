@@ -17,6 +17,11 @@ import dashboard
 from person import Person
 import pound_statics
 
+global risky_global_report_status = 0
+#This is a bad idea implemented by Elder Davis to make keeping track of empty zone reports easy. When the generate_report function is run,
+# it will set this variable to 0 every single time. If the report is empty, it will set this value to 1, and then the main function will check
+# this variable to determine whether or not to record an instance of an empty report day
+
 
 def load_today_report() -> Union[dict[str, dict[str, list[str]]], None]:
     """Tries to load a report from today, returns None if none"""
@@ -35,6 +40,7 @@ def load_today_report() -> Union[dict[str, dict[str, list[str]]], None]:
 
 def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     """Generates a report of uncontacted referrals"""
+    global risky_global_report_status = 0
     zones = load_today_report()
 
     if zones is None:
@@ -75,6 +81,7 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     zone = zones.get(str(requested_zone.value))
     if zone is None:
         print(zone)
+        global risky_global_report_status = 1
         return 'NO UNCONTACTED REFERRALS!!11!'
     if zone:
         message = ''
@@ -91,6 +98,12 @@ def main():
     print('Good morning')
     chirch.ChurchClient().login()
     holly_client = holly.HollyClient()
+
+    # for zone in dashboard.Zone:
+    #     generate_report(zone)
+    #     if risky_global_report_status != 0:
+            
+
     score = competition.get_score()
 
     # Iterate over all the zones
