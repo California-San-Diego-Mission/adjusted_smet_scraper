@@ -17,7 +17,7 @@ import dashboard
 from person import Person
 import pound_statics
 
-global risky_global_report_status = 0
+risky_global_report_status = 0
 #This is a bad idea implemented by Elder Davis to make keeping track of empty zone reports easy. When the generate_report function is run,
 # it will set this variable to 0 every single time. If the report is empty, it will set this value to 1, and then the main function will check
 # this variable to determine whether or not to record an instance of an empty report day
