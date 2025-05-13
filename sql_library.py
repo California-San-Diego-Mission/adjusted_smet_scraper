@@ -3,6 +3,7 @@ import dotenv
 import os
 from datetime import date
 import re
+from transfer_calculator import get_most_recent_transfer_date
 
 dotenv.load_dotenv()
 
@@ -49,13 +50,19 @@ def mark_zone_blank_slate_on_day(zone, day):
 
 def count_blank_slates_in_zone_since_day(zone, day):
     #expects an integer zone number and a string yyyy-mm-dd date
-    zone_is_allowed()
+    zone_is_allowed(zone)
     zone_column = create_column_from_zone(zone)
     valid_date(day)
     query = f"select count(*) from zone_report_history where {zone_column} = 1 AND day >= %s;"
-    cursor.execute(query, (day))
+    cursor.execute(query, (day,))
     return cursor.fetchall()[0][0]
+
+def count_blank_slates_in_zone_since_transfer_day(zone):
+    return count_blank_slates_in_zone_since_day(zone, get_most_recent_transfer_date())
     
 
-mark_zone_blank_slate_on_day(5, "2023-07-31")
+# mark_zone_blank_slate_on_day(5, "2023-07-31")
 # mark_today_zone_blank_slate(1)
+allowed_zones = [i for i in range(1, 9)]
+for i in allowed_zones:
+    print(count_blank_slates_in_zone_since_transfer_day(i))

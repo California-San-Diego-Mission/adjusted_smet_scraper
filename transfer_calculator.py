@@ -15,12 +15,15 @@ SECONDS_PER_TRANSFER = 60 * 60 * 24 * 7 * 6 # 60 sec/min, 60 min/hr, 24 hr/day, 
 
 def get_most_recent_transfer_time_stamp():
     current_time = int(time.time()) #current time in seconds
-    print(current_time)
+    # print(current_time)
     current_displacement = current_time - KNOWN_TRANSFER_THURSDAY #current number of seconds since the constant transfer
     current_transfer_number = int(current_displacement / SECONDS_PER_TRANSFER) #gets the number of full transfers it has been
     result_time_stamp = KNOWN_TRANSFER_THURSDAY + (current_transfer_number * SECONDS_PER_TRANSFER) #calculates the time stamp of the most recent transfer thursday
-    print(result_time_stamp)
+    # print(result_time_stamp)
     return result_time_stamp
 
+def get_most_recent_transfer_date():
+    return datetime.datetime.fromtimestamp(get_most_recent_transfer_time_stamp()).strftime("%Y-%m-%d")
+
 # testing
-print(datetime.datetime.fromtimestamp(get_most_recent_transfer_time_stamp()))
+# print(get_most_recent_transfer_date())
