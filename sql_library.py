@@ -27,13 +27,6 @@ def zone_is_allowed(zone):
 def create_column_from_zone(zone):
     return f"z{zone}"
 
-def count_zone_blank_slates(zone):
-    zone_is_allowed(zone)
-    column = create_column_from_zone(zone)
-    query = f"SELECT count(*) FROM zone_report_history WHERE {column} = 1;"
-    cursor.execute(query)
-    return cursor.fetchall()[0][0]
-
 def mark_today_zone_blank_slate(zone):
     mark_zone_blank_slate_on_day(zone, date.today().strftime("%Y-%m-%d"))
 
@@ -61,6 +54,7 @@ def count_blank_slates_in_zone_since_day(zone, day):
     valid_date(day)
     query = f"select count(*) from zone_report_history where {zone_column} = 1 AND day >= %s;"
     cursor.execute(query, (day))
+    return cursor.fetchall()[0][0]
     
 
 mark_zone_blank_slate_on_day(5, "2023-07-31")
