@@ -40,7 +40,8 @@ def load_today_report() -> Union[dict[str, dict[str, list[str]]], None]:
 
 def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     """Generates a report of uncontacted referrals"""
-    global risky_global_report_status = 0
+    global risky_global_report_status
+    risky_global_report_status= 0
     zones = load_today_report()
 
     if zones is None:
@@ -81,7 +82,7 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     zone = zones.get(str(requested_zone.value))
     if zone is None:
         print(zone)
-        global risky_global_report_status = 1
+        risky_global_report_status = 1
         return 'NO UNCONTACTED REFERRALS!!11!'
     if zone:
         message = ''
