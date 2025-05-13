@@ -7,62 +7,84 @@ from transfer_calculator import get_most_recent_transfer_date
 
 dotenv.load_dotenv()
 
-mydb = mysql.connector.connect(
-    host='localhost',
-    user=os.environ['MYSQL_USERNAME'],
-    password=os.environ['MYSQL_PASSWORD'],
-    database='holly',
-)
-
-cursor = mydb.cursor()
+ALLOWED_ZONES = list(range(1, 9))
+VALID_COLUMNS = {f"z{i}" for i in ALLOWED_ZONES}
 
 def is_valid_date_format(date_string):
     pattern = r'^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$'
     return bool(re.match(pattern, date_string))
 
 def zone_is_allowed(zone):
-    allowed_zones = [i for i in range(1, 9)]  # Example allowed zones: z1 to z8
-    if zone not in allowed_zones:
+    if zone not in ALLOWED_ZONES:
         raise ValueError("Invalid zone")
 
 def create_column_from_zone(zone):
-    return f"z{zone}"
+    column = f"z{zone}"
+    if column not in VALID_COLUMNS:
+        raise ValueError("Unsafe column name")
+    return column
 
 def mark_today_zone_blank_slate(zone):
     mark_zone_blank_slate_on_day(zone, date.today().strftime("%Y-%m-%d"))
 
 def valid_date(day):
     if not is_valid_date_format(day):
-        raise ValueError("Invalid date")
+        raise ValueError("Invalid date format")
 
 def mark_zone_blank_slate_on_day(zone, day):
-    #expects an integer zone number and a string yyyy-mm-dd date
     zone_is_allowed(zone)
     zone_column = create_column_from_zone(zone)
     valid_date(day)
+
     query = f"""
         INSERT INTO zone_report_history (day, {zone_column})
         VALUES (%s, %s)
         ON DUPLICATE KEY UPDATE {zone_column} = %s;
-        """
-    cursor.execute(query, (day, 1, 1))
-    mydb.commit()
+    """
+
+    try:
+        with mysql.connector.connect(
+            host='localhost',
+            user=os.environ['MYSQL_USERNAME'],
+            password=os.environ['MYSQL_PASSWORD'],
+            database='holly',
+        ) as mydb:
+            with mydb.cursor() as cursor:
+                cursor.execute(query, (day, 1, 1))
+                mydb.commit()
+    except mysql.connector.Error as err:
+        print(f"Database error while inserting blank slate: {err}")
 
 def count_blank_slates_in_zone_since_day(zone, day):
-    #expects an integer zone number and a string yyyy-mm-dd date
     zone_is_allowed(zone)
     zone_column = create_column_from_zone(zone)
     valid_date(day)
-    query = f"select count(*) from zone_report_history where {zone_column} = 1 AND day >= %s;"
-    cursor.execute(query, (day,))
-    return cursor.fetchall()[0][0]
+
+    query = f"""
+        SELECT COUNT(*) FROM zone_report_history
+        WHERE {zone_column} = 1 AND day >= %s;
+    """
+
+    try:
+        with mysql.connector.connect(
+            host='localhost',
+            user=os.environ['MYSQL_USERNAME'],
+            password=os.environ['MYSQL_PASSWORD'],
+            database='holly',
+        ) as mydb:
+            with mydb.cursor() as cursor:
+                cursor.execute(query, (day,))
+                result = cursor.fetchone()
+                return result[0] if result else 0
+    except mysql.connector.Error as err:
+        print(f"Database error while counting blank slates: {err}")
+        return None
 
 def count_blank_slates_in_zone_since_transfer_day(zone):
     return count_blank_slates_in_zone_since_day(zone, get_most_recent_transfer_date())
-    
 
-# mark_zone_blank_slate_on_day(5, "2023-07-31")
-# mark_today_zone_blank_slate(1)
-allowed_zones = [i for i in range(1, 9)]
-for i in allowed_zones:
-    print(count_blank_slates_in_zone_since_transfer_day(i))
+# Example usage
+if __name__ == "__main__":
+    for i in ALLOWED_ZONES:
+        result = count_blank_slates_in_zone_since_transfer_day(i)
+        print(f"Zone {i}: {result}")
