@@ -17,6 +17,11 @@ import dashboard
 from person import Person
 import pound_statics
 
+risky_global_report_status = 0
+#This is a bad idea implemented by Elder Davis to make keeping track of empty zone reports easy. When the generate_report function is run,
+# it will set this variable to 0 every single time. If the report is empty, it will set this value to 1, and then the main function will check
+# this variable to determine whether or not to record an instance of an empty report day
+
 
 def load_today_report() -> Union[dict[str, dict[str, list[str]]], None]:
     """Tries to load a report from today, returns None if none"""
@@ -29,28 +34,24 @@ def load_today_report() -> Union[dict[str, dict[str, list[str]]], None]:
             with open(f'reports/{report}', 'r', encoding='utf-8') as f:
                 # Parse it as a JSON
                 report_data = json.load(f)
-                print(report_data['zones'])
                 return report_data['zones']
     return None
 
 
 def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     """Generates a report of uncontacted referrals"""
-    # zones = load_today_report()
-    zones = None #for testing, forcing it to be None
+    global risky_global_report_status
+    risky_global_report_status= 0
+    zones = load_today_report()
+
     if zones is None:
         print('No report for today, generating a new one')
         client = chirch.ChurchClient()
         persons = client.get_cached_people_list()
         troubled: list[Person] = []
-        artificial_iterator = 0 #not to include in the final. For the sake of testing, this will only use the first 2 referrals in the list
         for p in persons:
-            print(p)
-            artificial_iterator += 1
-            if artificial_iterator > 20:
-                break
             res = client.filter_person(p)
-            if res is False: 
+            if res is False:
                 print('continuing')
                 continue
             troubled.append(p)
@@ -69,18 +70,19 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
                 area = zone[p.area_name]
             area.append(p.first_name.strip())
 
-        # # Save the zone messages to reports/timestamp.json
-        # now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
-        # json.dump(
-        #     {'zones': zones},
-        #     open(f'reports/{now}.json', 'w', encoding='utf-8'),
-        #     indent=4,
-        # )
-        # zones = json.loads(json.dumps(zones))  # lazy I know
+        # Save the zone messages to reports/timestamp.json
+        now = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
+        json.dump(
+            {'zones': zones},
+            open(f'reports/{now}.json', 'w', encoding='utf-8'),
+            indent=4,
+        )
+        zones = json.loads(json.dumps(zones))  # lazy I know
 
     zone = zones.get(str(requested_zone.value))
     if zone is None:
         print(zone)
+        risky_global_report_status = 1
         return 'NO UNCONTACTED REFERRALS!!11!'
     if zone:
         message = ''
@@ -89,7 +91,7 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
             for name in names:
                 message += f'  - {name}\n'
             message += '\n'
-        # print(message)
+        print(message)
         return message
 
 
@@ -97,13 +99,17 @@ def main():
     print('Good morning')
     chirch.ChurchClient().login()
     holly_client = holly.HollyClient()
+
+    # for zone in dashboard.Zone:
+    #     generate_report(zone)
+    #     if risky_global_report_status != 0:
+            
+
     score = competition.get_score()
 
-    # For the sake of testing, only will send to Elder J. Davis
-    for zone in dashboard.Zone: 
+    # Iterate over all the zones
+    for zone in dashboard.Zone:
         print(zone)
-        if zone != dashboard.Zone.ZONE_8:
-            continue
         res_message = f'{choice(pound_statics.morning)}\n\n'
         res_message += choice(pound_statics.score_intro) + '\n'
         res_message += score

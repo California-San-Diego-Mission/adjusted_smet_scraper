@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 import chirch
 import dashboard
 import transfer_calculator
+import sql_library
 
 load_dotenv()
 
@@ -101,7 +102,8 @@ def get_score():
         res = ''
 
         for zone, times in ranked:
-            percent_str = round(statistics.mean(times))
+            print(zone)
+            percent_str = round((0.99 ** sql_library.count_blank_slates_in_zone_since_transfer_day(zone)) * statistics.mean(times))
             zone_name = zone.name.replace('_', ' ').capitalize()
             res += f'{zone_name}: {percent_str} mins\n'
         res += f'\nSuccessful: {successful}'
