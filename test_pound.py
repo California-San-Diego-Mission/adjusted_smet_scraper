@@ -118,6 +118,7 @@ def main():
         res_message += choice(pound_statics.outro)
 
         # chat = pound_statics.messenger_ids.get(zone)
+        #Sends it all to Holly's chat with her favorite person Elder J. Davis (the less handsome of the Elder Davis)
         holly_client.send(holly.HollyMessage(res_message, '26732959939628175'))
         
 
