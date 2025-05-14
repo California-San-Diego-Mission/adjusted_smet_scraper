@@ -5,6 +5,22 @@ from datetime import date
 import re
 from transfer_calculator import get_most_recent_transfer_date
 
+# Example of the zone_report_history table:
+# There is a column for the date, which has a UNIQUE constraint so we don't end up in circumstances of double-counting scores on the same day
+# Each zone has a column, storing a bit. Zeros represent days where the slate was not blank, and ones represent blank slate days
+# This library has functions that edit this based on reports and that count up how many days each zone has a blank slate for
+# 
+# mysql> select * from zone_report_history;
+# +------------+------------+------------+------------+------------+------------+------------+------------+------------+
+# | day        | z1         | z2         | z3         | z4         | z5         | z6         | z7         | z8         |
+# +------------+------------+------------+------------+------------+------------+------------+------------+------------+
+# | 2024-01-01 | 0x00       | 0x00       | 0x01       | 0x01       | 0x00       | 0x00       | 0x01       | 0x01       |
+# | 2024-02-01 | 0x01       | 0x01       | 0x01       | 0x01       | 0x00       | 0x00       | 0x01       | 0x01       |
+# | 2024-02-21 | 0x01       | 0x01       | 0x00       | 0x00       | 0x00       | 0x00       | 0x01       | 0x01       |
+# | 2023-07-31 | 0x01       | 0x01       | 0x00       | 0x01       | 0x01       | 0x00       | 0x00       | 0x00       |
+# +------------+------------+------------+------------+------------+------------+------------+------------+------------+
+# 4 rows in set (0.01 sec)
+
 dotenv.load_dotenv()
 
 ALLOWED_ZONES = list(range(1, 9))
