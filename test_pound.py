@@ -83,7 +83,7 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
     if zone is None:
         print(zone)
         risky_global_report_status = 1
-        return 'NO UNCONTACTED REFERRALS!!11!'
+        return 'NO UNCONTACTED REFERRALS!!11! Your zone earned a bonus for a blank slate!'
     if zone:
         message = ''
         for area, names in zone.items():

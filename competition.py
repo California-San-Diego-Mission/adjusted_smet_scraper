@@ -110,12 +110,15 @@ def get_score():
             # print(round((0.99 ** blank_slates) * statistics.mean(times)))
             percent_str = round((0.99 ** blank_slates) * statistics.mean(times))
             # print(percent_str)
-            zone_name = zone.name.replace('_', ' ').capitalize()
-            res += f'{zone_name}: {percent_str} mins ({blank_slates} blank slates)\n'
+            # zone_name = zone.name.replace('_', ' ').capitalize()
+            bonus_string = ''
+            if blank_slates > 0:
+                bonus_string += f' ({blank_slates} bonus)'
+            res += f'Z{zone_number}: {percent_str} mins{bonus_string}\n'
         res += f'\nSuccessful: {successful}'
         res += f'\nAttempted: {attempted}'
         res += f'\nTotal: {total}'
-
+        print(res)
         return res
     except Exception as e:
         print(f'Error getting score: {e}')

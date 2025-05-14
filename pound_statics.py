@@ -122,4 +122,17 @@ outro = [
     'May your days be full of miracles!',
     'Go and do, the Lord will provide!',
     'Stay faithful, and the blessings will come!',
+    'Remember to contact your referrals ASAP! (no pressure)',
+]
+
+blank_slates = [
+    "I'm going to wag my tail all day!",
+    "I want to give you all treats! Too bad I'm out of MSF...",
+    "I'm so happy that I'm going to wag my tail with all of these people in heaven!",
+    "Yaaaaaay!!!!",
+    "Good work! I am very pround to have you as my humans.",
+    "Let's keep it going!",
+    "Your zone is so fire at SMF!",
+    "That's a miracle right there!",
+    "You are awesome now, in 20 years, and forever!",
 ]
