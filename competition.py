@@ -103,9 +103,15 @@ def get_score():
 
         for zone, times in ranked:
             print(zone)
-            percent_str = round((0.99 ** sql_library.count_blank_slates_in_zone_since_transfer_day(zone)) * statistics.mean(times))
+            zone_number = strip_zone_number_from_name(zone.name)
+            print(zone_number)
+            blank_slates = sql_library.count_blank_slates_in_zone_since_transfer_day(zone_number)
+            # print(blank_slates)
+            # print(round((0.99 ** blank_slates) * statistics.mean(times)))
+            percent_str = round((0.99 ** blank_slates) * statistics.mean(times))
+            # print(percent_str)
             zone_name = zone.name.replace('_', ' ').capitalize()
-            res += f'{zone_name}: {percent_str} mins\n'
+            res += f'{zone_name}: {percent_str} mins ({blank_slates} blank slates)\n'
         res += f'\nSuccessful: {successful}'
         res += f'\nAttempted: {attempted}'
         res += f'\nTotal: {total}'
@@ -113,8 +119,11 @@ def get_score():
         return res
     except Exception as e:
         print(f'Error getting score: {e}')
-        return '*bark* unable to fetch the score *bark*'
+        return '*bark* unable to fetch the score *bark*'    
 
+
+def strip_zone_number_from_name(name):
+    return int(name.split('_')[-1])
 
 def get_contact_time(guid: str, cursor, church_client) -> Union[float, None]:
     cursor.execute('SELECT contact_time FROM people WHERE guid = %s', (guid,))

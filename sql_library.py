@@ -9,6 +9,7 @@ from transfer_calculator import get_most_recent_transfer_date
 # There is a column for the date, which has a UNIQUE constraint so we don't end up in circumstances of double-counting scores on the same day
 # Each zone has a column, storing a bit. Zeros represent days where the slate was not blank, and ones represent blank slate days
 # This library has functions that edit this based on reports and that count up how many days each zone has a blank slate for
+# This table should also have default values of 0 in each zone column, until such a time as the program edits it
 # 
 # mysql> select * from zone_report_history;
 # +------------+------------+------------+------------+------------+------------+------------+------------+------------+
@@ -102,5 +103,11 @@ def count_blank_slates_in_zone_since_transfer_day(zone):
 # Example usage
 if __name__ == "__main__":
     for i in ALLOWED_ZONES:
+        mark_zone_blank_slate_on_day(i, "2025-04-25")
+        mark_zone_blank_slate_on_day(i, "2025-04-26")
+        mark_zone_blank_slate_on_day(i, "2025-04-27")
+        mark_zone_blank_slate_on_day(i, "2025-04-28")
+        mark_zone_blank_slate_on_day(i, "2025-04-29")
         result = count_blank_slates_in_zone_since_transfer_day(i)
         print(f"Zone {i}: {result}")
+        print(zone_is_allowed(8))
