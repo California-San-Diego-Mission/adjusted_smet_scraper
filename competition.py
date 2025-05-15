@@ -102,14 +102,11 @@ def get_score():
         res = ''
 
         for zone, times in ranked:
-            print(zone)
+            # print(zone)
             zone_number = strip_zone_number_from_name(zone.name)
-            print(zone_number)
+            # print(zone_number)
             blank_slates = sql_library.count_blank_slates_in_zone_since_transfer_day(zone_number)
-            # print(blank_slates)
-            # print(round((0.99 ** blank_slates) * statistics.mean(times)))
-            percent_str = round((0.99 ** blank_slates) * statistics.mean(times))
-            # print(percent_str)
+            percent_str = round(statistics.mean(times) - (5 * blank_slates))
             # zone_name = zone.name.replace('_', ' ').capitalize()
             bonus_string = ''
             if blank_slates > 0:
@@ -118,7 +115,7 @@ def get_score():
         res += f'\nSuccessful: {successful}'
         res += f'\nAttempted: {attempted}'
         res += f'\nTotal: {total}'
-        print(res)
+        # print(res)
         return res
     except Exception as e:
         print(f'Error getting score: {e}')

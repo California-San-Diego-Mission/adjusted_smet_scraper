@@ -97,8 +97,9 @@ def main():
     chirch.ChurchClient().login()
     holly_client = holly.HollyClient()
 
-    for zone in dashboard.Zone:
-        generate_report(zone)
+    # reports: dict[Zone, str] = {}
+    # for zone in dashboard.Zone:
+        # generate_report(zone)
             
     score = competition.get_score()
 
@@ -108,7 +109,7 @@ def main():
         res_message += choice(pound_statics.score_intro) + '\n'
         res_message += score
         res_message += '\n\n'
-        report = generate_report(zone)
+        report = load_today_report(zone)
         if report:
             res_message += choice(pound_statics.referrals) + '\n'
             res_message += report
@@ -117,8 +118,10 @@ def main():
         res_message += '\n'
         res_message += choice(pound_statics.outro)
 
-        chat = pound_statics.messenger_ids.get(zone)
-        holly_client.send(holly.HollyMessage(res_message, chat))
+        # chat = pound_statics.messenger_ids.get(zone)
+        # holly_client.send(holly.HollyMessage(res_message, chat))
+        #Sends it all to Holly's chat with her favorite person Elder J. Davis (the less handsome of the Elder Davis)
+        holly_client.send(holly.HollyMessage(res_message, '26732959939628175'))
 
 
 if __name__ == '__main__':

@@ -56,10 +56,11 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
 
         zones = {}
         for p in troubled:
-            zone = zones.get(p.zone)
+            zone_name = str(p.zone)
+            zone = zones.get(zone_name)
             if zone is None:
-                zones[p.zone] = {}
-                zone = zones[p.zone]
+                zones[zone_name] = {}
+                zone = zones[zone_name]
             area = zone.get(p.area_name)
             if area is None:
                 zone[p.area_name] = []
@@ -75,7 +76,9 @@ def generate_report(requested_zone: dashboard.Zone) -> Optional[str]:
         )
         zones = json.loads(json.dumps(zones))  # lazy I know
 
-    zone = zones.get(str(requested_zone.name))
+    zone = zones.get(f'Zone.{str(requested_zone.name)}')
+    # print(f'Zones: {zones}')
+    print(f'Is zone none? {zone} name: {str(requested_zone.name)} zone: {requested_zone}')
     if zone is None:
         zone_number = competition.strip_zone_number_from_name(requested_zone.name)
         print(f'Zone {zone_number} got a blank slate today')
@@ -97,8 +100,9 @@ def main():
     chirch.ChurchClient().login()
     holly_client = holly.HollyClient()
 
+    reports: dict[Zone, str] = {}
     for zone in dashboard.Zone:
-        generate_report(zone)
+        reports[zone] = generate_report(zone)
             
     score = competition.get_score()
 
@@ -108,7 +112,7 @@ def main():
         res_message += choice(pound_statics.score_intro) + '\n'
         res_message += score
         res_message += '\n\n'
-        report = generate_report(zone)
+        report = reports[zone]
         if report:
             res_message += choice(pound_statics.referrals) + '\n'
             res_message += report
@@ -118,9 +122,10 @@ def main():
         res_message += choice(pound_statics.outro)
 
         # chat = pound_statics.messenger_ids.get(zone)
+        # holly_client.send(holly.HollyMessage(res_message, chat))
         #Sends it all to Holly's chat with her favorite person Elder J. Davis (the less handsome of the Elder Davis)
-        holly_client.send(holly.HollyMessage(res_message, '26732959939628175'))
-        
+        print(f'{zone} \n {res_message}')
+        # holly_client.send(holly.HollyMessage(res_message, '26732959939628175'))
 
 
 if __name__ == '__main__':
