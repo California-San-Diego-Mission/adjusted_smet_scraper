@@ -41,7 +41,7 @@ class ZoneResults:
 
 
 def get_score():
-    """Gets the score of contacted/total referrals"""
+    """Gets the score of contacted/total referrals with bonus-adjusted rankings."""
     try:
         mydb = mysql.connector.connect(
             host='localhost',
@@ -54,9 +54,10 @@ def get_score():
         client = chirch.ChurchClient()
         persons = client.get_cached_people_list()
 
-        # get the last transfer
+        # Get the last transfer time
         last_transfer = datetime.datetime.fromtimestamp(transfer_calculator.get_most_recent_transfer_time_stamp())
         print(last_transfer)
+
         zones: dict[dashboard.Zone, list[float]] = {}
         total = 0
         successful = 0
@@ -68,13 +69,13 @@ def get_score():
             try:
                 zone = person.zone
 
-                # If the zone doesn't exist, insert it
+                # Initialize zone if not present
                 if zones.get(zone) is None:
                     zones[zone] = []
 
                 status = person.referral_status
 
-                # Get the time from assignment to contact
+                # Get contact time for attempted referrals
                 if (
                     status == dashboard.ReferralStatus.NOT_SUCCESSFUL
                     or status == dashboard.ReferralStatus.SUCCESSFUL
@@ -95,33 +96,40 @@ def get_score():
                 print(f'Error processing person: {e}')
                 continue
 
+        # Filter out zones with no valid contact times
         zones = {k: v for (k, v) in zones.items() if len(v) > 0}
-        ranked = sorted(zones.items(), key=lambda x: statistics.mean(x[1]))
 
-        # Create the string
-        res = ''
-
-        for zone, times in ranked:
-            # print(zone)
+        # Compute adjusted scores and collect bonus info
+        zone_scores = []
+        for zone, times in zones.items():
             zone_number = strip_zone_number_from_name(zone.name)
-            # print(zone_number)
             blank_slates = sql_library.count_blank_slates_in_zone_since_transfer_day(zone_number)
-            percent_str = round(statistics.mean(times) - (5 * blank_slates))
-            # zone_name = zone.name.replace('_', ' ').capitalize()
+            adjusted_score = statistics.mean(times) - (5 * blank_slates)
+            zone_scores.append((zone, adjusted_score, blank_slates))
+
+        # Sort zones by adjusted score (lower is better)
+        ranked = sorted(zone_scores, key=lambda x: x[1])
+
+        # Build result string
+        res = ''
+        for zone, adjusted_score, blank_slates in ranked:
+            zone_number = strip_zone_number_from_name(zone.name)
+            percent_str = round(adjusted_score)
             bonus_string = ''
             if blank_slates > 0:
-                bonus_string += f' ({blank_slates} bonus)'
+                bonus_string = f' ({blank_slates} bonus)'
             res += f'Z{zone_number}: {percent_str} mins{bonus_string}\n'
+
         res += f'\nSuccessful: {successful}'
         res += f'\nAttempted: {attempted}'
         res += f'\nTotal: {total}'
-        # print(res)
+
         return res
+
     except Exception as e:
         print(f'Error getting score: {e}')
-        return '*bark* unable to fetch the score *bark*'    
-
-
+        return '*bark* unable to fetch the score *bark*'
+   
 def strip_zone_number_from_name(name):
     return int(name.split('_')[-1])
 
